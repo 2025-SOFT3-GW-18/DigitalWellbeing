@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Digital Wellbeing App (スマホ依存対策アプリ)
 
-## Getting Started
+ユーザーの「スマホ依存度」を診断し、その傾向に合った対策アプリを見つけ、知識を深めるためのデジタル・ウェルビーイング支援ツールです。
 
-First, run the development server:
+## 📱 アプリの概要
+
+簡単な質問に答えるだけで、スマホへの依存度を客観的に数値化し、タイプ別の対策を提案します。
+ユーザー登録不要で、ブラウザ上ですぐに利用できます（データはローカル保存）。
+
+## ✨ 主な機能
+
+### 1. 🩺 依存度診断 (Diagnosis)
+* **スマホ依存度チェック**: 10個の質問で依存度をスコア化（30点満点）。
+* **レベル判定**: 「低依存」～「重度依存」の4段階で判定し、アドバイスを表示。
+* **前回比較**: 前回の診断結果と比較し、改善・悪化に応じたメッセージを表示。
+* **履歴管理**: 過去の診断結果をグラフやリストで振り返り。
+
+### 2. 🔍 タイプ診断 (Personalize)
+* **依存タイプ分析**: 3つの質問で、依存の傾向を4タイプに分類。
+    * 🐰 SNS・承認欲求タイプ
+    * 🎮 ゲーム・没頭タイプ
+    * 👻 無意識・習慣タイプ
+    * 💼 仕事・強迫観念タイプ
+* **パーソナライズ提案**: タイプに合わせて最適な対策アプリを自動提案。
+
+### 3. 📚 ガイド & 評価 (Resources)
+* **対策アプリ一覧**: 集中力育成、強制ロック、管理系などカテゴリ別に紹介。
+* **データ可視化**: 各アプリの「目標達成率（円グラフ）」と「特徴分析（レーダーチャート）」を表示。
+* **投票機能**: ユーザーが使用感を投票し、グラフにリアルタイム反映（デモ機能）。
+
+### 4. 🧠 知識・相談 (Knowledge)
+* **学習リソース**: 脳科学的な依存の仕組みやデジタルデトックスに関する情報リンク。
+* **相談窓口**: 都道府県や専門機関の相談窓口への案内。
+
+## 🛠️ 使用技術
+
+* **Framework**: [Next.js 14+](https://nextjs.org/) (App Router)
+* **Language**: TypeScript / React
+* **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+* **Charts**: [Chart.js](https://www.chartjs.org/)
+* **Storage**: LocalStorage (ブラウザ保存)
+
+## 🚀 始め方 (Getting Started)
+
+プロジェクトのディレクトリで以下のコマンドを実行し、依存パッケージのインストールと開発サーバーの起動を行います。
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
