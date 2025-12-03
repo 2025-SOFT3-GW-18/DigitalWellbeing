@@ -49,7 +49,7 @@
 node -v
 ```
 
-まだPCにインストールしていない場合は、以下の記事を参考に準備してください。
+PCにインストールしていない場合は、以下の記事を参考に準備してください。
 
 * [【Windows】Nodejsをインストールしよう](https://zenn.dev/kuuki/articles/windows-nodejs-install)
 
