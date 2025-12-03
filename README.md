@@ -42,6 +42,12 @@
 
 ## 🚀 始め方 (Getting Started)
 
+準備（npmが使えない場合）
+このアプリを動かすには **Node.js** が必要です。
+まだPCにインストールしていない場合は、以下の記事を参考に準備してください。
+
+* [【Windows】Nodejsをインストールしよう](https://zenn.dev/kuuki/articles/windows-nodejs-install)
+
 プロジェクトのディレクトリで以下のコマンドを順に実行し、インストールと起動を行います。
 
 ```bash
