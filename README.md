@@ -42,8 +42,13 @@
 
 ## 🚀 始め方 (Getting Started)
 
-準備（npmが使えない場合）
 このアプリを動かすには **Node.js** が必要です。
+ターミナル（PowerShellやコマンドプロンプト）で以下のコマンドを入力して確認してください。
+
+```bash
+node -v
+```
+
 まだPCにインストールしていない場合は、以下の記事を参考に準備してください。
 
 * [【Windows】Nodejsをインストールしよう](https://zenn.dev/kuuki/articles/windows-nodejs-install)
@@ -56,3 +61,5 @@ npm install
 ```bash
 npm run dev
 ```
+
+コマンド実行後、ブラウザで http://localhost:3000 を開くとサイトが表示されます。
