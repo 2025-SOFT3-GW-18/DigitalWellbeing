@@ -1,5 +1,7 @@
+
 "use client";
 import React, { useState, useEffect, useRef } from "react";
+
 /* ===============================================
  1. 型定義・インターフェース
 =============================================== */
@@ -11,15 +13,24 @@ interface User {
 }
 type ChartConstructor = any;
 type ChartInstance = any;
+
 interface TestHistoryRecord {
   id: number;
   date: string;
   score: number;
   level: string;
   recommendation: string;
-  /** 前回比メッセージを永続化して、再ログイン後も復元 */
   comparisonMessage?: string;
 }
+
+interface PendingResult {
+  date: string;
+  score: number;
+  level: string;
+  recommendation: string;
+  comparisonMessage?: string;
+}
+
 interface AppStat {
   id: string;
   name: string;
@@ -47,6 +58,7 @@ interface AppStat {
     };
   };
 }
+
 interface AddictionType {
   id: string;
   name: string;
@@ -56,6 +68,7 @@ interface AddictionType {
   recommendedCategories: string[];
   recommendedAppIds: string[];
 }
+
 interface UserAppRating {
   isSuccess: boolean;
   ratings: {
@@ -68,12 +81,14 @@ interface UserAppRating {
   updatedAt: string;
 }
 type UserRatingsMap = { [appId: string]: UserAppRating };
+
 /* ===============================================
  2. 定数定義
 =============================================== */
 const USER_ICONS = [
   "🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐯","🦁","🐮","🐷","🐵","🐺","🐻‍❄️","🐨"
 ];
+
 const testQuestions = [
   "スマートフォンを使う時間を減らそうとしたが、結局できなかった。",
   "食事中や会話中など、本来スマホを使うべきではない状況で、無意識に手に取ってしまう。",
@@ -86,6 +101,7 @@ const testQuestions = [
   "ベッドに入ってからも長時間スマホを見てしまい、寝つきが悪くなる。",
   "重要な用事がないのに、気がつくとスマホを操作している時間が長い。",
 ];
+
 const IMPROVEMENT_MESSAGES = [
   "素晴らしい進歩です！前回よりスコアが改善しました。🌟",
   "おめでとうございます！意識の変化が結果に表れています。😊",
@@ -104,15 +120,14 @@ const SAME_SCORE_MESSAGES = [
   "前回と同じスコアです。現状を維持できていますね。⚖️",
   "変化はありません。油断すると増えてしまうので注意です。👀",
 ];
+
 const ADDICTION_TYPES: { [key: string]: AddictionType } = {
   sns: {
     id: "sns",
     name: "SNS・承認欲求タイプ",
     icon: "🐰",
-    description:
-      "「いいね」や返信が気になり、常に誰かと繋がっていないと不安になるタイプです。",
-    advice:
-      "通知を完全にオフにする時間を設けるか、強制的にアプリをロックするツールが有効です。",
+    description: "「いいね」や返信が気になり、常に誰かと繋がっていないと不安になるタイプです。",
+    advice: "通知を完全にオフにする時間を設けるか、強制的にアプリをロックするツールが有効です。",
     recommendedCategories: ["lock"],
     recommendedAppIds: ["detox", "stayfree"],
   },
@@ -120,10 +135,8 @@ const ADDICTION_TYPES: { [key: string]: AddictionType } = {
     id: "game",
     name: "ゲーム・没頭タイプ",
     icon: "🎮",
-    description:
-      "現実逃避や達成感を求めて、長時間ゲームや動画に没頭してしまうタイプです。",
-    advice:
-      "「やめる」こと自体をゲーム化できるアプリや、育成要素のあるツールで置き換えましょう。",
+    description: "現実逃避や達成感を求めて、長時間ゲームや動画に没頭してしまうタイプです。",
+    advice: "「やめる」こと自体をゲーム化できるアプリや、育成要素のあるツールで置き換えましょう。",
     recommendedCategories: ["gamification"],
     recommendedAppIds: ["forest", "focus_quest"],
   },
@@ -131,10 +144,8 @@ const ADDICTION_TYPES: { [key: string]: AddictionType } = {
     id: "habit",
     name: "無意識・習慣タイプ",
     icon: "👻",
-    description:
-      "目的がないのに、手持ち無沙汰で無意識にスマホを触ってしまうタイプです。",
-    advice:
-      "触った瞬間に「気づき」を与えるアプリや、利用時間の可視化ツールがおすすめです。",
+    description: "目的がないのに、手持ち無沙汰で無意識にスマホを触ってしまうタイプです。",
+    advice: "触った瞬間に「気づき」を与えるアプリや、利用時間の可視化ツールがおすすめです。",
     recommendedCategories: ["gamification", "lock"],
     recommendedAppIds: ["fish", "ubhind", "stop"],
   },
@@ -142,14 +153,13 @@ const ADDICTION_TYPES: { [key: string]: AddictionType } = {
     id: "work",
     name: "仕事・強迫観念タイプ",
     icon: "💼",
-    description:
-      "休日や夜間でも仕事の連絡やニュースが気になり、脳が休まらないタイプです。",
-    advice:
-      "時間帯で区切って利用制限する機能や、ペアレンタルコントロールの自己適用が有効です。",
+    description: "休日や夜間でも仕事の連絡やニュースが気になり、脳が休まらないタイプです。",
+    advice: "時間帯で区切って利用制限する機能や、ペアレンタルコントロールの自己適用が有効です。",
     recommendedCategories: ["family", "lock"],
     recommendedAppIds: ["screentime", "detox"],
   },
 };
+
 const PERSONALIZE_QUESTIONS = [
   {
     id: 1,
@@ -182,6 +192,7 @@ const PERSONALIZE_QUESTIONS = [
     ],
   },
 ];
+
 const initialAppStats: AppStat[] = [
   { id: "forest", name: "Forest", category: "gamification", icon: "🌲", desc: "集中時間に応じて「木」を育て、失敗すると枯れる。", url: "https://www.google.com/search?q=スマホアプリ+Forest", successRate: 85, totalVotes: 1240, ratings: { effectiveness: 4.5, fun: 4.8, ease: 4.0, continuity: 4.2, design: 5.0 } },
   { id: "focus_quest", name: "Focus Quest", category: "gamification", icon: "🗺️", desc: "集中時間を「冒険」に見立て、目標達成でヒーローを育成。", url: "https://www.google.com/search?q=スマホアプリ+Focus+Quest", successRate: 78, totalVotes: 530, ratings: { effectiveness: 4.0, fun: 5.0, ease: 3.5, continuity: 4.5, design: 4.2 } },
@@ -194,6 +205,7 @@ const initialAppStats: AppStat[] = [
   { id: "family_link", name: "Google Family Link", category: "family", icon: "🌐", desc: "Google公式。子どもの利用時間をリモート管理。", url: "https://www.google.com/search?q=スマホアプリ+Google+Family+Link", successRate: 88, totalVotes: 1500, ratings: { effectiveness: 4.8, fun: 2.5, ease: 3.5, continuity: 4.8, design: 4.0 } },
   { id: "screentime", name: "スクリーンタイム (iOS)", category: "family", icon: "🍏", desc: "Apple公式。アプリごとの時間制限、休止時間設定。", url: "https://www.google.com/search?q=スマホアプリ+スクリーンタイム+iOS", successRate: 80, totalVotes: 2000, ratings: { effectiveness: 4.5, fun: 3.0, ease: 5.0, continuity: 4.5, design: 4.5 } },
 ];
+
 /* ===============================================
  3. ストレージキー
 =============================================== */
@@ -208,14 +220,17 @@ const KEY_LAST_USER_ID = "dw_last_user_id";
 const KEY_ACTIVE_TAB = "dw_active_tab";
 const KEY_USER_RATINGS = "dw_userRatings";
 const KEY_APP_STATS_BACKUP = "dw_appStats_backup";
-/* ★ 追加：タブ別スクロール位置保存キー */
 const SCROLL_KEY_PREFIX = "dw_scroll_";
+/* 追加：未ログインの診断結果一時保存キー */
+const KEY_PENDING_RESULT = "dw_pending_result";
+
 /* ===============================================
  4. 初期値
 =============================================== */
 const initialTestAnswers = new Array(testQuestions.length).fill(null);
 const initialTestScore: number | null = null;
 const initialTestResult: { level: string; recommendation: string } | null = null;
+
 /* ===============================================
  5. ヘルパー
 =============================================== */
@@ -241,8 +256,17 @@ const saveToLocalStorage = (key: string, value: any, userId?: string) => {
     console.error(`Error saving key ${key} to localStorage:`, error);
   }
 };
-const formatDate = (date: Date): string =>
-  date.toISOString().slice(0, 10).replace(/\-/g, "/");
+const removeFromLocalStorage = (key: string, userId?: string) => {
+  if (typeof window === "undefined") return;
+  try {
+    const storageKey = userId ? getUserKey(key, userId) : key;
+    localStorage.removeItem(storageKey);
+  } catch (error) {
+    console.error(`Error removing key ${key} from localStorage:`, error);
+  }
+};
+const formatDate = (date: Date): string => date.toISOString().slice(0, 10).replace(/\-/g, "/");
+
 const getResultFromScore = (score: number) => {
   let level = "重度依存";
   let recommendation =
@@ -262,6 +286,7 @@ const getResultFromScore = (score: number) => {
   }
   return { level, recommendation };
 };
+
 const getResultStyle = (level: string) => {
   switch (level) {
     case "低依存":
@@ -276,19 +301,21 @@ const getResultStyle = (level: string) => {
       return { bg: "bg-gray-50", border: "border-gray-300", text: "text-gray-700", scoreText: "text-gray-800", icon: "❓" };
   }
 };
+
 /* ===============================================
  ★ パスワード（8～16・半角英数字＋半角記号）
 =============================================== */
 const PASSWORD_MAX = 16;
-const capPassword = (v: string) =>
-  v.replace(/[^\x21-\x7E]/g, "").slice(0, PASSWORD_MAX);
+const capPassword = (v: string) => v.replace(/[^\x21-\x7E]/g, "").slice(0, PASSWORD_MAX);
 const isValidPassword = (v: string) => /^[A-Za-z0-9\x21-\x7E]{8,16}$/.test(v);
+
 /* ===============================================
  6. グラフ・モーダル等のコンポーネント
 =============================================== */
 const ResourceChart = ({ type, data, options, chartjsConstructor, isChartJsLoaded }: any) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chartInstance = useRef<ChartInstance | null>(null);
+
   useEffect(() => {
     if (isChartJsLoaded && chartjsConstructor && canvasRef.current) {
       if (chartInstance.current) chartInstance.current.destroy();
@@ -301,6 +328,7 @@ const ResourceChart = ({ type, data, options, chartjsConstructor, isChartJsLoade
       if (chartInstance.current) chartInstance.current.destroy();
     };
   }, [data, options, type, chartjsConstructor, isChartJsLoaded]);
+
   if (!isChartJsLoaded) {
     return (
       <div className="h-32 bg-gray-100 rounded animate-pulse flex items-center justify-center text-xs text-gray-400">
@@ -314,34 +342,29 @@ const ResourceChart = ({ type, data, options, chartjsConstructor, isChartJsLoade
     </div>
   );
 };
-/* --- アイコン選択 --- */
-const IconPicker = ({
-  value, onChange,
-}: { value: string; onChange: (icon: string) => void; }) => {
-  return (
-    <div className="w-full overflow-x-hidden overflow-y-auto max-h-40 p-1 rounded-lg bg-white border border-gray-200">
-      <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(40px,1fr))]">
-        {USER_ICONS.map((ic) => (
-          <button
-            key={ic}
-            type="button"
-            onClick={() => onChange(ic)}
-            title={ic}
-            className={`flex items-center justify-center
-            aspect-square rounded-lg border transition
-            leading-none select-none
-            ${value === ic
+
+const IconPicker = ({ value, onChange }: { value: string; onChange: (icon: string) => void; }) => (
+  <div className="w-full overflow-x-hidden overflow-y-auto max-h-40 p-1 rounded-lg bg-white border border-gray-200">
+    <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(40px,1fr))]">
+      {USER_ICONS.map((ic) => (
+        <button
+          key={ic}
+          type="button"
+          onClick={() => onChange(ic)}
+          title={ic}
+          className={`flex items-center justify-center aspect-square rounded-lg border transition leading-none select-none ${
+            value === ic
               ? "bg-indigo-50 border-indigo-300 ring-2 ring-indigo-200"
-              : "bg-white border-gray-200 hover:bg-gray-100"}
-            `}
-          >
-            <span className="text-base">{ic}</span>
-          </button>
-        ))}
-      </div>
+              : "bg-white border-gray-200 hover:bg-gray-100"
+          }`}
+        >
+          <span className="text-base">{ic}</span>
+        </button>
+      ))}
     </div>
-  );
-};
+  </div>
+);
+
 /* 背景スクロール停止 */
 const useBodyScrollLock = (isOpen: boolean) => {
   useEffect(() => {
@@ -353,11 +376,14 @@ const useBodyScrollLock = (isOpen: boolean) => {
     }
   }, [isOpen]);
 };
-/* --- 投票モーダル（z-index上げ） --- */
+
+/* --- 投票モーダル（二重送信防止） --- */
 const SurveyModal = ({ isOpen, onClose, app, onSubmit, onDelete, existingRating }: any) => {
   useBodyScrollLock(!!isOpen);
   const [isSuccess, setIsSuccess] = useState(true);
   const [ratings, setRatings] = useState({ effectiveness: 3, fun: 3, ease: 3, continuity: 3, design: 3 });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   useEffect(() => {
     if (isOpen && app) {
       if (existingRating) {
@@ -367,10 +393,15 @@ const SurveyModal = ({ isOpen, onClose, app, onSubmit, onDelete, existingRating 
         setIsSuccess(true);
         setRatings({ effectiveness: 3, fun: 3, ease: 3, continuity: 3, design: 3 });
       }
+      setIsSubmitting(false);
     }
   }, [isOpen, app, existingRating]);
+
   if (!isOpen || !app) return null;
+
   const handleSubmit = () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     const norm = (n: number) => Math.max(1, Math.min(5, Number(n) || 1));
     const normalized = {
       effectiveness: norm(ratings.effectiveness),
@@ -381,7 +412,9 @@ const SurveyModal = ({ isOpen, onClose, app, onSubmit, onDelete, existingRating 
     };
     onSubmit(app.id, isSuccess, normalized);
     onClose();
+    setIsSubmitting(false);
   };
+
   const handleDelete = () => {
     if (!existingRating) return onClose();
     if (confirm("このアプリへのあなたの評価を削除しますか？\n（投票は取り消され、集計から除外されます）")) {
@@ -389,11 +422,12 @@ const SurveyModal = ({ isOpen, onClose, app, onSubmit, onDelete, existingRating 
       onClose();
     }
   };
+
   const ratingLabels: Record<string, string> = { effectiveness: "効果", fun: "楽しさ", ease: "手軽さ", continuity: "継続性", design: "デザイン" };
+
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-[100]">
       <div className="bg-white w-full max-w-sm rounded-xl shadow-2xl p-6 relative" onClick={(e) => e.stopPropagation()}>
-        {/* Survey は元の“○背景に×”を維持 */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 z-10 text-gray-500 hover:text-gray-800 transition p-2 rounded-full bg-gray-100 hover:bg-gray-200"
@@ -432,7 +466,11 @@ const SurveyModal = ({ isOpen, onClose, app, onSubmit, onDelete, existingRating 
             </div>
           ))}
         </div>
-        <button onClick={handleSubmit} className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition">
+        <button
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+          className={`w-full bg-indigo-600 text-white font-bold py-3 rounded-lg transition ${isSubmitting ? "opacity-60 cursor-not-allowed" : "hover:bg-indigo-700"}`}
+        >
           {existingRating ? "評価を更新" : "投票してデータを更新"}
         </button>
         {existingRating && (
@@ -444,20 +482,23 @@ const SurveyModal = ({ isOpen, onClose, app, onSubmit, onDelete, existingRating 
     </div>
   );
 };
-/* --- プロフィールモーダル（×ボタンを投票と同じ“灰色の○”へ統一） --- */
+
+/* --- プロフィールモーダル（アカウント削除） --- */
 const ProfileModal = ({
-  isOpen, onClose, currentUser, onSubmit, users,
+  isOpen, onClose, currentUser, onSubmit, users, onDeleteCurrentUser,
 }: {
   isOpen: boolean;
   onClose: () => void;
   currentUser: User;
   onSubmit: (nextName: string, nextPassword: string, nextIcon: string) => void;
   users: User[];
+  onDeleteCurrentUser: () => void;
 }) => {
   useBodyScrollLock(!!isOpen);
   const [name, setName] = useState(currentUser?.name ?? "");
   const [password, setPassword] = useState("");
   const [icon, setIcon] = useState<string>(currentUser?.icon ?? USER_ICONS[0]);
+
   useEffect(() => {
     if (isOpen && currentUser) {
       setName(currentUser.name);
@@ -465,7 +506,9 @@ const ProfileModal = ({
       setIcon(currentUser.icon ?? USER_ICONS[0]);
     }
   }, [isOpen, currentUser]);
+
   if (!isOpen || !currentUser) return null;
+
   const submit = (e?: React.FormEvent) => {
     e?.preventDefault();
     const newName = name.trim();
@@ -484,14 +527,28 @@ const ProfileModal = ({
     onClose();
     alert("アカウント情報を更新しました");
   };
+
+  const handleDeleteAccount = () => {
+    if (!currentUser) return;
+    const ok = confirm(
+      `「${currentUser.name}」のアカウントを削除します。\n` +
+      "診断履歴・結果・タイプ・アプリ評価など、あなたのローカルデータはすべて削除されます。\n" +
+      "この操作は元に戻せません。よろしいですか？"
+    );
+    if (!ok) return;
+    onDeleteCurrentUser();
+    onClose();
+    alert("アカウントを削除しました。");
+  };
+
   return (
     <div className="fixed inset-0 bg-gray-900/70 z-[100] flex items-center justify-center p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 relative" onClick={(e) => e.stopPropagation()}>
-        {/* 閉じるボタンを投票と同じスタイルへ（位置 top-3/right-3 は維持） */}
         <button className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 transition p-2 rounded-full bg-gray-100 hover:bg-gray-200" onClick={onClose} title="閉じる">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
         <h3 className="text-xl font-extrabold text-gray-800 mb-4 text-center">アカウント設定</h3>
+
         <form onSubmit={submit}>
           <label className="block text-sm font-bold text-gray-600 mb-2">ユーザー名（10文字以内）</label>
           <input
@@ -514,11 +571,23 @@ const ProfileModal = ({
           <IconPicker value={icon} onChange={setIcon} />
           <button type="submit" className="mt-4 w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition">更新する</button>
         </form>
+
+        <div className="mt-4 pt-4 border-t border-red-200">
+          <p className="text-xs text-red-600 font-bold mb-2">⚠️ アカウント削除（復元不可）</p>
+          <button
+            type="button"
+            onClick={handleDeleteAccount}
+            className="w-full py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg font-bold transition"
+          >
+            アカウントを削除する
+          </button>
+        </div>
       </div>
     </div>
   );
 };
-/* --- 統合認証モーダル（×ボタンを投票と同じ“灰色の○”へ統一） --- */
+
+/* --- 統合認証モーダル --- */
 const UnifiedAuthModal = ({
   isOpen, onClose, onLogin, onRegister, onAdminLogin, onSuccess,
 }: {
@@ -533,10 +602,13 @@ const UnifiedAuthModal = ({
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [icon, setIcon] = useState<string>(USER_ICONS[0]);
+
   useEffect(() => {
     if (isOpen) { setMode("login"); setUsername(""); setPassword(""); setIcon(USER_ICONS[0]); }
   }, [isOpen]);
+
   if (!isOpen) return null;
+
   const submitLogin = (e?: React.FormEvent) => {
     e?.preventDefault();
     const name = username.trim();
@@ -546,6 +618,7 @@ const UnifiedAuthModal = ({
     const ok = onLogin(name, password);
     if (ok) { onClose(); onSuccess("login"); } else alert("ユーザー名またはパスワードが正しくありません");
   };
+
   const submitRegister = (e?: React.FormEvent) => {
     e?.preventDefault();
     const name = username.trim(); const pw = capPassword(password);
@@ -556,10 +629,10 @@ const UnifiedAuthModal = ({
     const ok = onRegister(name, pw, icon);
     if (ok) { onClose(); onSuccess("register"); }
   };
+
   return (
     <div className="fixed inset-0 bg-gray-900/70 z-[100] flex items-center justify-center p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 relative" onClick={(e) => e.stopPropagation()}>
-        {/* 閉じるボタンを投票と同じスタイルへ（位置 top-3/right-3 は維持） */}
         <button className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 transition p-2 rounded-full bg-gray-100 hover:bg-gray-200" onClick={onClose} title="閉じる">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
@@ -601,7 +674,8 @@ const UnifiedAuthModal = ({
     </div>
   );
 };
-/* --- 管理者操作デモ（元の“○なしグレー”へ） --- */
+
+/* --- 管理者操作デモ --- */
 const AdminActionDemoModal = ({
   isOpen, onClose, mode, users, currentAppStats,
   onExecute, onApplyDemo, onRestore,
@@ -615,6 +689,7 @@ const AdminActionDemoModal = ({
   useBodyScrollLock(!!isOpen);
   const [useDemoPreview, setUseDemoPreview] = useState(false);
   if (!isOpen) return null;
+
   const generateDemoStats = (apps: AppStat[]) =>
     apps.map(app => {
       const cfg = app.category === "gamification" ? { rate: [65, 90], votes: [500, 2000] }
@@ -629,21 +704,24 @@ const AdminActionDemoModal = ({
         ratings: { effectiveness: avg(), fun: avg(), ease: avg(), continuity: avg(), design: avg() },
       };
     });
+
   const demoStats = generateDemoStats(currentAppStats);
   const previewStats = useDemoPreview
     ? demoStats
     : currentAppStats.map(app => ({ ...app, successRate: 0, totalVotes: 0, ratings: { effectiveness: 0, fun: 0, ease: 0, continuity: 0, design: 0 }, }));
+
   const userKeys = [KEY_ANSWERS, KEY_SCORE, KEY_RESULT, KEY_HISTORY, KEY_TYPE_RESULT, KEY_ACTIVE_TAB];
   const confirmExecute = () => {
     if (confirm("全ユーザーの診断履歴・結果・タイプを削除します。よろしいですか？")) onExecute();
   };
+
   return (
     <div className="fixed inset-0 bg-gray-900/70 z-[100] flex items-center justify-center p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 relative" onClick={(e) => e.stopPropagation()}>
-        {/* 元の × ボタン色合い（○背景なし） */}
         <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 transition" onClick={onClose} title="閉じる">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
+
         {mode === "ratings" ? (
           <>
             <h3 className="text-xl font-extrabold text-gray-800 mb-4">評価データ初期化（プレビュー）</h3>
@@ -705,6 +783,7 @@ const AdminActionDemoModal = ({
     </div>
   );
 };
+
 /* --- アプリカード --- */
 const AppCard = ({ app, chartjsConstructor, isChartJsLoaded, onOpenSurvey }: any) => {
   const pieData = { labels: ["成功", "失敗"], datasets: [{ data: [app.successRate, 100 - app.successRate], backgroundColor: ["#4ade80", "#e5e7eb"], borderWidth: 0 }] };
@@ -722,6 +801,7 @@ const AppCard = ({ app, chartjsConstructor, isChartJsLoaded, onOpenSurvey }: any
     }]
   };
   const radarOptions= { plugins: { legend: { display: false } }, scales: { r: { min: 0, max: 5, ticks: { display: false, stepSize: 1 }, pointLabels: { display: true, font: { size: 9 }, color: "#4b5563" } } }, maintainAspectRatio: false };
+
   return (
     <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4 mb-4">
       <div className="flex-1">
@@ -738,6 +818,7 @@ const AppCard = ({ app, chartjsConstructor, isChartJsLoaded, onOpenSurvey }: any
           <button onClick={() => onOpenSurvey(app)} className="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-2 rounded-lg font-bold transition">投票する 🗳️</button>
         </div>
       </div>
+
       <div className="flex gap-2 h-48 md:w-96 shrink-0">
         <div className="w-2/5 relative flex flex-col items-center justify-center">
           <p className="text-[10px] text-gray-400 font-bold mb-1">目標達成率</p>
@@ -756,6 +837,7 @@ const AppCard = ({ app, chartjsConstructor, isChartJsLoaded, onOpenSurvey }: any
     </div>
   );
 };
+
 const ResourceSection = ({ appStats, chartjsConstructor, isChartJsLoaded, onOpenSurvey }: any) => (
   <div className="space-y-8">
     <div className="bg-green-50 border-green-200 border rounded-xl p-4 md:p-6 shadow-sm">
@@ -766,6 +848,7 @@ const ResourceSection = ({ appStats, chartjsConstructor, isChartJsLoaded, onOpen
         ))}
       </div>
     </div>
+
     <div className="bg-red-50 border-red-200 border rounded-xl p-4 md:p-6 shadow-sm">
       <h3 className="font-bold text-red-800 text-xl mb-2 flex items-center"><span className="mr-2">⏰</span> 2. 強制ロック・時間管理系</h3>
       <div className="space-y-3">
@@ -774,6 +857,7 @@ const ResourceSection = ({ appStats, chartjsConstructor, isChartJsLoaded, onOpen
         ))}
       </div>
     </div>
+
     <div className="bg-blue-50 border-blue-200 border rounded-xl p-4 md:p-6 shadow-sm">
       <h3 className="font-bold text-blue-800 text-xl mb-2 flex items-center"><span className="mr-2">👨‍👩‍👧‍👦</span> 3. ペアレンタルコントロール・家族管理</h3>
       <div className="space-y-3">
@@ -784,6 +868,7 @@ const ResourceSection = ({ appStats, chartjsConstructor, isChartJsLoaded, onOpen
     </div>
   </div>
 );
+
 /* --- 知識セクション --- */
 const KnowledgeSection = () => {
   const KnowledgeLink = ({ icon, title, url, isExternal }: { icon: string; title: string; url: string; isExternal?: boolean; }) => (
@@ -797,18 +882,21 @@ const KnowledgeSection = () => {
       </div>
     </a>
   );
+
   return (
     <div className="space-y-6">
       <div className="bg-purple-50 border-purple-200 border rounded-xl p-6 shadow-sm">
         <div className="mb-6">
           <h3 className="font-bold text-purple-800 text-xl mb-2 flex items-center">依存のメカニズムを知り、専門的なサポート情報にアクセスします。</h3>
         </div>
+
         <h4 className="font-bold text-gray-700 mb-3 border-l-4 border-purple-400 pl-3">読み物・知識</h4>
         <div className="grid grid-cols-1 gap-3 mb-6">
           <KnowledgeLink icon="📖" title="【脳科学】スマホがもたらすドーパミンの罠と対処法" url="https://www.google.com/search?q=【脳科学】スマホがもたらすドーパミンの罠と対処法" />
           <KnowledgeLink icon="🧘" title="今日からできる！デジタルデトックス入門ガイド" url="https://www.google.com/search?q=今日からできる！デジタルデトックス入門ガイド" />
           <KnowledgeLink icon="🔔" title="集中力を高めるための通知設定の極意" url="https://www.google.com/search?q=集中力を高めるための通知設定の極意" />
         </div>
+
         <h4 className="font-bold text-gray-700 mb-3 border-l-4 border-purple-400 pl-3">専門機関・相談窓口</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <KnowledgeLink icon="🏥" title="都道府県別依存症相談窓口" url="https://www.zmhwc.jp/index.html" isExternal />
@@ -818,7 +906,8 @@ const KnowledgeSection = () => {
     </div>
   );
 };
-/* --- パーソナライズ診断（結果で上移動の挙動を撤廃） --- */
+
+/* --- パーソナライズ診断 --- */
 const PersonalizeSection = ({ currentUser, appStats, chartjsConstructor, isChartJsLoaded, onOpenSurvey }: any) => {
   const savedResult = currentUser ? loadFromLocalStorage(KEY_TYPE_RESULT, null, currentUser.id) : null;
   const initialStep = savedResult ? "result" : "intro";
@@ -826,6 +915,7 @@ const PersonalizeSection = ({ currentUser, appStats, chartjsConstructor, isChart
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [scores, setScores] = useState<{[key: string]: number}>({ sns: 0, game: 0, habit: 0, work: 0 });
   const [resultType, setResultType] = useState<AddictionType | null>(savedResult);
+
   const handleStart = () => { setStep("question"); setCurrentQuestionIdx(0); setScores({ sns: 0, game: 0, habit: 0, work: 0 }); };
   const handleAnswer = (type: string) => {
     const newScores = { ...scores, [type]: scores[type] + 1 };
@@ -834,7 +924,7 @@ const PersonalizeSection = ({ currentUser, appStats, chartjsConstructor, isChart
       setCurrentQuestionIdx(currentQuestionIdx + 1);
     } else {
       let maxScore = -1; let maxType: keyof typeof ADDICTION_TYPES = "habit";
-      Object.entries(newScores).forEach(([key, val]) => { if (val > maxScore) { maxScore = val; maxType = key as keyof typeof ADDICTION_TYPES; }});
+      Object.entries(newScores).forEach(([key, val]) => { if (val > maxScore) { maxScore = val; maxType = key as keyof typeof ADDICTION_TYPES; } });
       const result = ADDICTION_TYPES[maxType];
       setResultType(result);
       if (currentUser) saveToLocalStorage(KEY_TYPE_RESULT, result, currentUser.id);
@@ -842,11 +932,13 @@ const PersonalizeSection = ({ currentUser, appStats, chartjsConstructor, isChart
     }
   };
   const handleRetake = () => { setResultType(null); if (currentUser) saveToLocalStorage(KEY_TYPE_RESULT, null, currentUser.id); handleStart(); };
+
   const recommendedApps = resultType ? appStats
     .filter((app: AppStat) =>
-      resultType.recommendedAppIds.includes(app.id) ||
-      (resultType.recommendedCategories.includes(app.category) && Math.random() > 0.5)
+      resultType!.recommendedAppIds.includes(app.id) ||
+      (resultType!.recommendedCategories.includes(app.category) && Math.random() > 0.5)
     ).slice(0, 3) : [];
+
   if (step === "intro") {
     return (
       <div className="max-w-2xl mx-auto text-center pt-10">
@@ -906,7 +998,8 @@ const PersonalizeSection = ({ currentUser, appStats, chartjsConstructor, isChart
     </div>
   );
 };
-/* --- 履歴詳細モーダル（×ボタンを投票と同じ“灰色の○”へ統一） --- */
+
+/* --- 履歴詳細モーダル --- */
 const HistoryDetailModal = ({ isOpen, onClose, record }: { isOpen: boolean; onClose: () => void; record: TestHistoryRecord | null; }) => {
   useBodyScrollLock(!!isOpen);
   if (!isOpen || !record) return null;
@@ -914,7 +1007,6 @@ const HistoryDetailModal = ({ isOpen, onClose, record }: { isOpen: boolean; onCl
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-[100]">
       <div className="bg-white w-full max-w-md rounded-xl shadow-2xl p-6 relative" onClick={(e) => e.stopPropagation()}>
-        {/* 閉じるボタンを投票と同じスタイルへ（位置 top-4/right-4 は維持） */}
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 transition p-2 rounded-full bg-gray-100 hover:bg-gray-200" aria-label="閉じる">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
@@ -935,12 +1027,12 @@ const HistoryDetailModal = ({ isOpen, onClose, record }: { isOpen: boolean; onCl
             </div>
           )}
         </div>
-        {/* 下部の「閉じる」ボタンは削除済み（維持） */}
       </div>
     </div>
   );
 };
-/* --- 診断テストモーダル（×ボタンを投票と同じ“灰色の○”へ統一） --- */
+
+/* --- 診断テストモーダル --- */
 const AddictionTestModal = React.memo(({
   isOpen, setIsModalOpen, testQuestions, testAnswers, handleAnswerChange, calculateScore,
   resetTest, testResult, testTotalScore, handleOptionClick, comparisonMessage, isLoggedIn, onLoginForHistory,
@@ -954,19 +1046,22 @@ const AddictionTestModal = React.memo(({
 }) => {
   useBodyScrollLock(!!isOpen);
   if (!isOpen) return null;
+
   const answeredCount = testAnswers.filter((s: any) => s !== null && s !== undefined).length;
   const isAllAnswered = answeredCount === testQuestions.length;
+
   const options = [
     { label: "全くない (0点)", score: 0, class: "border-green-400 bg-green-50 text-green-700 hover:bg-green-100" },
     { label: "たまにある (1点)", score: 1, class: "border-yellow-400 bg-yellow-50 text-yellow-700 hover:bg-yellow-100" },
     { label: "よくある (2点)", score: 2, class: "border-orange-400 bg-orange-50 text-orange-700 hover:bg-orange-100" },
     { label: "ほとんどいつも (3点)", score: 3, class: "border-red-400 bg-red-50 text-red-700 hover:bg-red-100" }
   ];
+
   const style = testResult ? getResultStyle(testResult.level) : null;
+
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-[100]">
       <div className={`bg-white w-full max-w-[92vw] md:max-w-[800px] max-h-[99svh] md:max-h-[96.5vh] ${testResult ? 'overflow-hidden' : 'overflow-auto'} rounded-lg shadow-2xl p-2 md:p-4 relative`} onClick={(e) => e.stopPropagation()}>
-        {/* 閉じるボタンを投票と同じスタイルへ（位置 top-4/right-4 は維持） */}
         <button
           onClick={() => setIsModalOpen(false)}
           className="absolute top-4 right-4 z-10 text-gray-500 hover:text-gray-800 transition p-2 rounded-full bg-gray-100 hover:bg-gray-200"
@@ -975,12 +1070,15 @@ const AddictionTestModal = React.memo(({
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
+
         <h3 className="font-extrabold text-indigo-700 text-3xl mb-4 border-b pb-2 flex items-center">
           <span className="text-4xl mr-2">📱</span> スマートフォン依存度 診断テスト
         </h3>
+
         {testResult && style ? (
           <div className={`mt-8 p-6 ${style.bg} border-2 ${style.border} rounded-xl shadow-inner`}>
             <h4 className={`text-2xl font-extrabold ${style.text} mb-4 flex items-center`}><span className="text-3xl mr-2">{style.icon}</span> 診断結果</h4>
+
             {!isLoggedIn && (
               <div className="mb-4 p-4 bg-white rounded-lg border-l-4 border-indigo-500 shadow-sm">
                 <p className="text-sm text-gray-600">
@@ -993,20 +1091,24 @@ const AddictionTestModal = React.memo(({
                 </div>
               </div>
             )}
+
             {comparisonMessage && (
               <div className="mb-6 p-4 bg-white rounded-lg border-l-4 border-indigo-500 shadow-sm">
                 <p className="font-bold text-indigo-800 flex items-start"><span className="mr-2 text-xl">💬</span>{comparisonMessage}</p>
               </div>
             )}
+
             <p className="text-xl font-bold mb-2">判定レベル: <span className={`${style.scoreText} text-3xl`}>{testResult.level}</span></p>
             <p className="text-lg font-bold mb-4">合計スコア: <span className={`${style.scoreText} text-2xl`}>{testTotalScore}点</span></p>
+
             <div className="border-t pt-4 border-gray-300/50">
               <h5 className={`font-bold ${style.text} mb-2`}>おすすめの行動指針:</h5>
               <p className="text-gray-800 whitespace-pre-line leading-relaxed">{testResult.recommendation}</p>
             </div>
-            {/* 右端に「再診断する」と「閉じる」を並べる（同サイズ） */}
+
             <div className="flex items-center gap-3 mt-8">
               <div className="ml-auto flex items-center gap-3">
+                {/* 再診断ボタン（色を元に戻す場合はここだけ変更） */}
                 <button
                   onClick={resetTest}
                   className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-base rounded-full shadow-lg transition transform hover:scale-[1.02]"
@@ -1050,9 +1152,75 @@ const AddictionTestModal = React.memo(({
   );
 });
 AddictionTestModal.displayName = "AddictionTestModal";
+
 /* ===============================================
  7. メインコンテンツ
 =============================================== */
+
+/** _agg を必ず持つ型へナローイング（TS18048対策） */
+type Agg = NonNullable<AppStat["_agg"]>;
+type AggAppStat = Omit<AppStat, "_agg"> & { _agg: Agg };
+function toAgg(app: AppStat): AggAppStat {
+  const tv = Math.max(0, app.totalVotes);
+  const agg: Agg = app._agg ?? {
+    successCount: Math.round(app.successRate * tv / 100),
+    ratingSums: {
+      effectiveness: app.ratings.effectiveness * tv,
+      fun: app.ratings.fun * tv,
+      ease: app.ratings.ease * tv,
+      continuity: app.ratings.continuity * tv,
+      design: app.ratings.design * tv,
+    },
+  };
+  return { ...app, _agg: { ...agg } };
+}
+
+/** 副作用なしの再計算（不変更新） */
+function recomputeAveragesPure(app: AppStat): AppStat {
+  const tv = Math.max(0, app.totalVotes);
+  const agg = app._agg ?? {
+    successCount: Math.round(app.successRate * tv / 100),
+    ratingSums: {
+      effectiveness: app.ratings.effectiveness * tv,
+      fun: app.ratings.fun * tv,
+      ease: app.ratings.ease * tv,
+      continuity: app.ratings.continuity * tv,
+      design: app.ratings.design * tv,
+    }
+  };
+
+  const clampedSuccess = Math.min(tv, Math.max(0, agg.successCount));
+  const rawRate = tv > 0 ? (clampedSuccess / tv) * 100 : 0;
+  const successRate = Math.min(100, Math.max(0, Math.round(rawRate)));
+
+  const sums = agg.ratingSums;
+  const safeSums = {
+    effectiveness: Math.max(0, sums.effectiveness),
+    fun: Math.max(0, sums.fun),
+    ease: Math.max(0, sums.ease),
+    continuity: Math.max(0, sums.continuity),
+    design: Math.max(0, sums.design),
+  };
+  const clamp5 = (v: number) => Math.min(5, Math.max(0, parseFloat(v.toFixed(1))));
+
+  const ratings = tv > 0
+    ? {
+        effectiveness: clamp5(safeSums.effectiveness / tv),
+        fun: clamp5(safeSums.fun / tv),
+        ease: clamp5(safeSums.ease / tv),
+        continuity: clamp5(safeSums.continuity / tv),
+        design: clamp5(safeSums.design / tv),
+      }
+    : { effectiveness: 0, fun: 0, ease: 0, continuity: 0, design: 0 };
+
+  return {
+    ...app,
+    successRate,
+    ratings,
+    _agg: { successCount: clampedSuccess, ratingSums: safeSums },
+  };
+}
+
 const MainContent = ({
   currentUser, users, onOpenAuth, onOpenProfile, onLogout, chartjsConstructor, isChartJsLoaded,
   activeTab, setActiveTab,
@@ -1076,9 +1244,9 @@ const MainContent = ({
   const [isSurveyOpen, setIsSurveyOpen] = useState(false);
   const [surveyTargetApp, setSurveyTargetApp] = useState<AppStat | null>(null);
   const [userRatings, setUserRatings] = useState<UserRatingsMap>({});
-  /** 初回ロード完了フラグ：true になるまでは localStorage 保存を抑止 */
   const [hasLoadedUserData, setHasLoadedUserData] = useState(false);
-  /** 読み込み（ログイン中はユーザー別／ゲストは保存しない） */
+
+  /* ロード（ユーザー別）＋未ログイン保留結果の取り込み */
   useEffect(() => {
     const userId = currentUser?.id;
     if (userId) {
@@ -1087,14 +1255,34 @@ const MainContent = ({
       const loadedResult = loadFromLocalStorage(KEY_RESULT, initialTestResult, userId);
       const loadedHistory = loadFromLocalStorage<TestHistoryRecord[]>(KEY_HISTORY, [], userId);
       const loadedRatings = loadFromLocalStorage(KEY_USER_RATINGS, {}, userId);
+
       setTestAnswers(loadedAnswers);
       setTestTotalScore(loadedScore);
       setTestResult(loadedResult);
       setTestHistory(loadedHistory);
       setUserRatings(loadedRatings);
+
       const latest = loadedHistory?.[0];
       setComparisonMessage(latest?.comparisonMessage ?? null);
       setHasLoadedUserData(true);
+
+      // 直前のゲスト結果があれば履歴へ自動追加
+      const pending = loadFromLocalStorage<PendingResult | null>(KEY_PENDING_RESULT, null);
+      if (pending && pending.score !== undefined && pending.level && pending.recommendation) {
+        const record: TestHistoryRecord = {
+          id: Date.now(),
+          date: pending.date || formatDate(new Date()),
+          score: pending.score,
+          level: pending.level,
+          recommendation: pending.recommendation,
+          comparisonMessage: pending.comparisonMessage || undefined,
+        };
+        setTestHistory(prev => [record, ...prev]);
+        removeFromLocalStorage(KEY_PENDING_RESULT);
+        setTestTotalScore(pending.score);
+        setTestResult({ level: pending.level, recommendation: pending.recommendation });
+        setComparisonMessage(pending.comparisonMessage || null);
+      }
     } else {
       setTestAnswers(initialTestAnswers);
       setTestTotalScore(initialTestScore);
@@ -1105,6 +1293,8 @@ const MainContent = ({
       setHasLoadedUserData(false);
     }
   }, [currentUser?.id]);
+
+  /* AppStats ロード＆移行 */
   useEffect(() => {
     const loaded = loadFromLocalStorage<AppStat[]>(KEY_APP_STATS, initialAppStats);
     const migrated = loaded.map((app) => {
@@ -1126,38 +1316,27 @@ const MainContent = ({
     setAppStats(migrated);
     setIsAppStatsLoaded(true);
   }, []);
-  useEffect(() => {
-    if (currentUser && hasLoadedUserData)
-      saveToLocalStorage(KEY_ANSWERS, testAnswers, currentUser.id);
-  }, [testAnswers, currentUser, hasLoadedUserData]);
-  useEffect(() => {
-    if (currentUser && hasLoadedUserData)
-      saveToLocalStorage(KEY_SCORE, testTotalScore, currentUser.id);
-  }, [testTotalScore, currentUser, hasLoadedUserData]);
-  useEffect(() => {
-    if (currentUser && hasLoadedUserData)
-      saveToLocalStorage(KEY_RESULT, testResult, currentUser.id);
-  }, [testResult, currentUser, hasLoadedUserData]);
-  useEffect(() => {
-    if (currentUser && hasLoadedUserData)
-      saveToLocalStorage(KEY_HISTORY, testHistory, currentUser.id);
-  }, [testHistory, currentUser, hasLoadedUserData]);
-  useEffect(() => {
-    if (isAppStatsLoaded)
-      saveToLocalStorage(KEY_APP_STATS, appStats);
-  }, [appStats, isAppStatsLoaded]);
-  useEffect(() => {
-    if (currentUser && hasLoadedUserData)
-      saveToLocalStorage(KEY_USER_RATINGS, userRatings, currentUser.id);
-  }, [userRatings, currentUser, hasLoadedUserData]);
+
+  /* 保存 */
+  useEffect(() => { if (currentUser && hasLoadedUserData) saveToLocalStorage(KEY_ANSWERS, testAnswers, currentUser.id); }, [testAnswers, currentUser, hasLoadedUserData]);
+  useEffect(() => { if (currentUser && hasLoadedUserData) saveToLocalStorage(KEY_SCORE, testTotalScore, currentUser.id); }, [testTotalScore, currentUser, hasLoadedUserData]);
+  useEffect(() => { if (currentUser && hasLoadedUserData) saveToLocalStorage(KEY_RESULT, testResult, currentUser.id); }, [testResult, currentUser, hasLoadedUserData]);
+  useEffect(() => { if (currentUser && hasLoadedUserData) saveToLocalStorage(KEY_HISTORY, testHistory, currentUser.id); }, [testHistory, currentUser, hasLoadedUserData]);
+  useEffect(() => { if (isAppStatsLoaded) saveToLocalStorage(KEY_APP_STATS, appStats); }, [appStats, isAppStatsLoaded]);
+  useEffect(() => { if (currentUser && hasLoadedUserData) saveToLocalStorage(KEY_USER_RATINGS, userRatings, currentUser.id); }, [userRatings, currentUser, hasLoadedUserData]);
+
+  /* 診断処理（未ログインは保留結果に保存） */
   const handleAnswerChange = (qIndex: number, score: number) =>
     setTestAnswers(prev => { const n = [...prev]; n[qIndex] = score; return n; });
+
   const handleOptionClick = (e: React.MouseEvent) => e.stopPropagation();
+
   const calculateScore = () => {
     const total = testAnswers.reduce((sum, s) => sum + (s ?? 0), 0);
     setTestTotalScore(total);
     const { level, recommendation } = getResultFromScore(total);
     setTestResult({ level, recommendation });
+
     let msg = "";
     if (currentUser && testHistory.length > 0) {
       const prevScore = testHistory[0].score;
@@ -1166,6 +1345,7 @@ const MainContent = ({
       else msg = SAME_SCORE_MESSAGES[Math.floor(Math.random() * SAME_SCORE_MESSAGES.length)];
     }
     setComparisonMessage(msg || null);
+
     if (currentUser) {
       const newRecord: TestHistoryRecord = {
         id: Date.now(),
@@ -1176,14 +1356,26 @@ const MainContent = ({
         comparisonMessage: msg || undefined,
       };
       setTestHistory(prev => [newRecord, ...prev]);
+    } else {
+      const pending: PendingResult = {
+        date: formatDate(new Date()),
+        score: total,
+        level,
+        recommendation,
+        comparisonMessage: undefined,
+      };
+      saveToLocalStorage(KEY_PENDING_RESULT, pending);
     }
   };
+
   const resetTest = () => {
     setTestAnswers(new Array(testQuestions.length).fill(null));
     setTestTotalScore(null);
     setTestResult(null);
     setComparisonMessage(null);
   };
+
+  /* 履歴 */
   const handleDeleteHistoryItem = (e: React.MouseEvent, recordId: number) => {
     e.stopPropagation();
     if (!currentUser) { onOpenAuth(); return; }
@@ -1195,125 +1387,97 @@ const MainContent = ({
     if (confirm("履歴をすべて削除しますか？")) setTestHistory([]);
   };
   const openHistoryDetail = (record: TestHistoryRecord) => { setSelectedHistoryRecord(record); setIsHistoryDetailOpen(true); };
+
+  /* 投票 */
   const openSurvey = (app: AppStat) => {
     if (!currentUser) { onOpenAuth(); return; }
     setSurveyTargetApp(app);
     setIsSurveyOpen(true);
   };
-  const recomputeAverages = (app: AppStat) => {
-    const tv = Math.max(0, app.totalVotes);
-    if (!app._agg) {
-      app._agg = {
-        successCount: Math.round(app.successRate * tv / 100),
-        ratingSums: {
-          effectiveness: app.ratings.effectiveness * tv,
-          fun: app.ratings.fun * tv,
-          ease: app.ratings.ease * tv,
-          continuity: app.ratings.continuity * tv,
-          design: app.ratings.design * tv,
-        }
-      };
-    }
-    app._agg.successCount = Math.min(tv, Math.max(0, app._agg.successCount));
-    const sc = app._agg.successCount;
-    const rawRate = tv > 0 ? (sc / tv) * 100 : 0;
-    app.successRate = Math.min(100, Math.max(0, Math.round(rawRate)));
-    const sums = app._agg.ratingSums;
-    const clamp5 = (v: number) => Math.min(5, Math.max(0, parseFloat(v.toFixed(1))));
-    if (tv > 0) {
-      app.ratings = {
-        effectiveness: clamp5(sums.effectiveness / tv),
-        fun: clamp5(sums.fun / tv),
-        ease: clamp5(sums.ease / tv),
-        continuity: clamp5(sums.continuity / tv),
-        design: clamp5(sums.design / tv),
-      };
-    } else {
-      app.ratings = { effectiveness: 0, fun: 0, ease: 0, continuity: 0, design: 0 };
-    }
-  };
+
   const handleSurveySubmit = (appId: string, isSuccess: boolean, userRatingsInput: any) => {
     if (!currentUser) { onOpenAuth(); return; }
     const prevUserRating = userRatings[appId] ?? null;
+
     setAppStats((prevStats: AppStat[]) =>
       prevStats.map((app: AppStat) => {
         if (app.id !== appId) return app;
-        if (!app._agg) {
-          app._agg = {
-            successCount: Math.round(app.successRate * app.totalVotes / 100),
-            ratingSums: {
-              effectiveness: app.ratings.effectiveness * app.totalVotes,
-              fun: app.ratings.fun * app.totalVotes,
-              ease: app.ratings.ease * app.totalVotes,
-              continuity: app.ratings.continuity * app.totalVotes,
-              design: app.ratings.design * app.totalVotes,
-            }
-          };
-        }
+
+        let nextApp = toAgg(app); // AggAppStat
+
         if (!prevUserRating) {
-          app._agg.successCount += isSuccess ? 1 : 0;
-          app.totalVotes += 1;
-          app._agg.ratingSums.effectiveness += userRatingsInput.effectiveness;
-          app._agg.ratingSums.fun += userRatingsInput.fun;
-          app._agg.ratingSums.ease += userRatingsInput.ease;
-          app._agg.ratingSums.continuity += userRatingsInput.continuity;
-          app._agg.ratingSums.design += userRatingsInput.design;
+          nextApp._agg.successCount += isSuccess ? 1 : 0;
+          nextApp.totalVotes += 1;
+          nextApp._agg.ratingSums.effectiveness += userRatingsInput.effectiveness;
+          nextApp._agg.ratingSums.fun          += userRatingsInput.fun;
+          nextApp._agg.ratingSums.ease         += userRatingsInput.ease;
+          nextApp._agg.ratingSums.continuity   += userRatingsInput.continuity;
+          nextApp._agg.ratingSums.design       += userRatingsInput.design;
         } else {
-          app._agg.successCount += (isSuccess ? 1 : 0) - (prevUserRating.isSuccess ? 1 : 0);
-          app._agg.ratingSums.effectiveness += userRatingsInput.effectiveness - prevUserRating.ratings.effectiveness;
-          app._agg.ratingSums.fun += userRatingsInput.fun - prevUserRating.ratings.fun;
-          app._agg.ratingSums.ease += userRatingsInput.ease - prevUserRating.ratings.ease;
-          app._agg.ratingSums.continuity += userRatingsInput.continuity - prevUserRating.ratings.continuity;
-          app._agg.ratingSums.design += userRatingsInput.design - prevUserRating.ratings.design;
+          nextApp._agg.successCount += (isSuccess ? 1 : 0) - (prevUserRating.isSuccess ? 1 : 0);
+          nextApp._agg.ratingSums.effectiveness += userRatingsInput.effectiveness - prevUserRating.ratings.effectiveness;
+          nextApp._agg.ratingSums.fun          += userRatingsInput.fun          - prevUserRating.ratings.fun;
+          nextApp._agg.ratingSums.ease         += userRatingsInput.ease         - prevUserRating.ratings.ease;
+          nextApp._agg.ratingSums.continuity   += userRatingsInput.continuity   - prevUserRating.ratings.continuity;
+          nextApp._agg.ratingSums.design       += userRatingsInput.design       - prevUserRating.ratings.design;
         }
-        app._agg.successCount = Math.min(app.totalVotes, Math.max(0, app._agg.successCount));
-        const sums = app._agg.ratingSums;
-        sums.effectiveness = Math.max(0, sums.effectiveness);
-        sums.fun = Math.max(0, sums.fun);
-        sums.ease = Math.max(0, sums.ease);
-        sums.continuity = Math.max(0, sums.continuity);
-        sums.design = Math.max(0, sums.design);
-        recomputeAverages(app);
-        return { ...app };
+
+        nextApp._agg.successCount = Math.min(nextApp.totalVotes, Math.max(0, nextApp._agg.successCount));
+        nextApp._agg.ratingSums.effectiveness = Math.max(0, nextApp._agg.ratingSums.effectiveness);
+        nextApp._agg.ratingSums.fun          = Math.max(0, nextApp._agg.ratingSums.fun);
+        nextApp._agg.ratingSums.ease         = Math.max(0, nextApp._agg.ratingSums.ease);
+        nextApp._agg.ratingSums.continuity   = Math.max(0, nextApp._agg.ratingSums.continuity);
+        nextApp._agg.ratingSums.design       = Math.max(0, nextApp._agg.ratingSums.design);
+
+        return recomputeAveragesPure(nextApp);
       })
     );
+
     const newUserRatings: UserRatingsMap = {
       ...userRatings,
       [appId]: { isSuccess, ratings: userRatingsInput, updatedAt: formatDate(new Date()) }
     };
     setUserRatings(newUserRatings);
+
     alert(prevUserRating ? "評価を更新しました。グラフが更新されました。" : "投票ありがとうございました！グラフが更新されました。");
   };
+
   const handleSurveyDelete = (appId: string) => {
     if (!currentUser) { onOpenAuth(); return; }
     const prevUserRating = userRatings[appId];
     if (!prevUserRating) return;
+
     setAppStats((prevStats: AppStat[]) =>
       prevStats.map((app: AppStat) => {
         if (app.id !== appId) return app;
-        if (!app._agg) return app;
-        app._agg.successCount -= prevUserRating.isSuccess ? 1 : 0;
-        app.totalVotes = Math.max(0, app.totalVotes - 1);
-        app._agg.ratingSums.effectiveness -= prevUserRating.ratings.effectiveness;
-        app._agg.ratingSums.fun -= prevUserRating.ratings.fun;
-        app._agg.ratingSums.ease -= prevUserRating.ratings.ease;
-        app._agg.ratingSums.continuity -= prevUserRating.ratings.continuity;
-        app._agg.ratingSums.design -= prevUserRating.ratings.design;
-        app._agg.successCount = Math.min(app.totalVotes, Math.max(0, app._agg.successCount));
-        const sums = app._agg.ratingSums;
-        sums.effectiveness = Math.max(0, sums.effectiveness);
-        sums.fun = Math.max(0, sums.fun);
-        sums.ease = Math.max(0, sums.ease);
-        sums.continuity = Math.max(0, sums.continuity);
-        sums.design = Math.max(0, sums.design);
-        recomputeAverages(app);
-        return { ...app };
+
+        let nextApp = toAgg(app); // AggAppStat
+
+        nextApp.totalVotes = Math.max(0, nextApp.totalVotes - 1);
+        nextApp._agg.successCount -= prevUserRating.isSuccess ? 1 : 0;
+        nextApp._agg.ratingSums.effectiveness -= prevUserRating.ratings.effectiveness;
+        nextApp._agg.ratingSums.fun          -= prevUserRating.ratings.fun;
+        nextApp._agg.ratingSums.ease         -= prevUserRating.ratings.ease;
+        nextApp._agg.ratingSums.continuity   -= prevUserRating.ratings.continuity;
+        nextApp._agg.ratingSums.design       -= prevUserRating.ratings.design;
+
+        nextApp._agg.successCount = Math.min(nextApp.totalVotes, Math.max(0, nextApp._agg.successCount));
+        nextApp._agg.ratingSums.effectiveness = Math.max(0, nextApp._agg.ratingSums.effectiveness);
+        nextApp._agg.ratingSums.fun          = Math.max(0, nextApp._agg.ratingSums.fun);
+        nextApp._agg.ratingSums.ease         = Math.max(0, nextApp._agg.ratingSums.ease);
+        nextApp._agg.ratingSums.continuity   = Math.max(0, nextApp._agg.ratingSums.continuity);
+        nextApp._agg.ratingSums.design       = Math.max(0, nextApp._agg.ratingSums.design);
+
+        return recomputeAveragesPure(nextApp);
       })
     );
+
     const { [appId]: _, ...rest } = userRatings;
     setUserRatings(rest);
     alert("あなたの評価を削除しました。グラフを更新しました。");
   };
+
+  /* 画面レンダリング */
   const renderContent = () => {
     const displayHistory = historyFilter === "10" ? testHistory.slice(0, 10) : testHistory;
     switch (activeTab) {
@@ -1332,6 +1496,7 @@ const MainContent = ({
                 診断テストをはじめる
               </button>
             </div>
+
             <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
               <div className="flex justify-between items-center mb-6 pb-2 border-b border-gray-100">
                 <h3 className="text-lg font-bold text-gray-700 flex items-center"><span className="mr-2">📋</span> 過去の履歴</h3>
@@ -1340,6 +1505,7 @@ const MainContent = ({
                   <button onClick={() => setHistoryFilter("all")} className={`px-3 py-1 rounded-md text-xs font-bold transition ${historyFilter === "all" ? "bg-white text-indigo-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>すべて</button>
                 </div>
               </div>
+
               {displayHistory.length === 0 ? (
                 <div className="text-center py-8 text-gray-400">
                   <p className="text-sm">まだ履歴がありません。<br/>ログインすると診断後に履歴が保存されます。</p>
@@ -1368,6 +1534,7 @@ const MainContent = ({
                   ))}
                 </div>
               )}
+
               {currentUser && testHistory.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-gray-100 text-right">
                   <button onClick={clearHistory} className="text-xs text-gray-400 hover:text-red-500 transition underline">すべての履歴を削除する</button>
@@ -1376,8 +1543,10 @@ const MainContent = ({
             </div>
           </div>
         );
+
       case "personalize":
         return <PersonalizeSection currentUser={currentUser} appStats={appStats} chartjsConstructor={chartjsConstructor} isChartJsLoaded={isChartJsLoaded} onOpenSurvey={openSurvey} />;
+
       case "resources":
         return (
           <div className="max-w-4xl mx-auto">
@@ -1385,6 +1554,7 @@ const MainContent = ({
             <ResourceSection appStats={appStats} chartjsConstructor={chartjsConstructor} isChartJsLoaded={isChartJsLoaded} onOpenSurvey={openSurvey} />
           </div>
         );
+
       case "knowledge":
         return (
           <div className="max-w-4xl mx-auto">
@@ -1392,13 +1562,15 @@ const MainContent = ({
             <KnowledgeSection />
           </div>
         );
+
       default:
         return null;
     }
   };
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800 font-sans pb-24">
-      {/* ヘッダー（元のグラデーション色合い） */}
+      {/* ヘッダー */}
       <header className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-4 shadow-lg sticky top-0 z-40">
         <div className="max-w-5xl mx-auto flex justify-between items-center">
           <h1 className="text-xl md:text-2xl font-extrabold tracking-tight">Digital Wellbeing</h1>
@@ -1413,9 +1585,7 @@ const MainContent = ({
                   <span className="mr-1 text-lg">{currentUser.icon}</span>
                   <span>{currentUser.name} さん</span>
                 </span>
-                <button onClick={onOpenProfile} className="text-xs bg-white text-indigo-600 px-3 py-2 rounded font-bold hover:bg-gray-100 transition shadow">
-                  ⚙️ 設定
-                </button>
+                <button onClick={onOpenProfile} className="text-xs bg-white text-indigo-600 px-3 py-2 rounded font-bold hover:bg-gray-100 transition shadow">⚙️ 設定</button>
                 <button
                   onClick={() => { if (confirm("ログアウトしますか？")) { onLogout(); } }}
                   className="text-xs bg-rose-100 text-rose-700 px-3 py-2 rounded font-bold border border-rose-300 hover:bg-rose-200 transition"
@@ -1427,9 +1597,11 @@ const MainContent = ({
           </div>
         </div>
       </header>
+
       {/* メイン */}
       <main className="max-w-5xl mx-auto p-4 md:p-6">{renderContent()}</main>
-      {/* フッター ナビ（元の白基調） */}
+
+      {/* フッター ナビ */}
       <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-lg z-40">
         <div className="max-w-5xl mx-auto flex justify-around items-center">
           {[
@@ -1449,6 +1621,7 @@ const MainContent = ({
           ))}
         </div>
       </nav>
+
       {/* モーダル群 */}
       <AddictionTestModal
         isOpen={isModalOpen}
@@ -1481,6 +1654,7 @@ const MainContent = ({
     </div>
   );
 };
+
 /* ===============================================
  8. 管理者画面（admin / admin のみ遷移）
 =============================================== */
@@ -1501,6 +1675,7 @@ const AdminPanel = ({
   const [demoMode, setDemoMode] = useState<"ratings" | "userData">("ratings");
   const openRatingsDemo = () => { setDemoMode("ratings"); setIsDemoOpen(true); };
   const openUserDataDemo = () => { setDemoMode("userData"); setIsDemoOpen(true); };
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800">
       <header className="bg-gradient-to-r from-red-600 to-pink-600 text-white p-4 shadow-lg sticky top-0 z-40">
@@ -1509,6 +1684,7 @@ const AdminPanel = ({
           <button onClick={onClose} className="text-xs bg-white text-red-600 px-3 py-2 rounded font-bold hover:bg-gray-100 transition shadow">終了</button>
         </div>
       </header>
+
       <main className="max-w-5xl mx-auto p-4 md:p-6 space-y-6">
         <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
           <h2 className="text-lg font-bold text-gray-800 mb-3">グローバル操作</h2>
@@ -1517,6 +1693,7 @@ const AdminPanel = ({
             <button onClick={openUserDataDemo} className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg font-bold">全ユーザーの診断履歴・結果・タイプ削除</button>
           </div>
         </div>
+
         <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
           <h2 className="text-lg font-bold text-gray-800 mb-3">ユーザー一覧</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1539,6 +1716,7 @@ const AdminPanel = ({
           </div>
         </div>
       </main>
+
       <AdminActionDemoModal
         isOpen={isDemoOpen}
         onClose={() => setIsDemoOpen(false)}
@@ -1562,6 +1740,7 @@ const AdminPanel = ({
     </div>
   );
 };
+
 /* ===============================================
  9. ルートコンポーネント（タブ別スクロール位置の保存・復元＋ログイン/ログアウト時トップ表示）
 =============================================== */
@@ -1576,6 +1755,7 @@ const DigitalWellbeingApp: React.FC = () => {
   const [appStats, setAppStats] = useState<AppStat[]>(initialAppStats);
   const chartjsConstructorRef = useRef<ChartConstructor | null>(null);
   const [activeTab, setActiveTab] = useState<"diagnosis" | "personalize" | "resources" | "knowledge">("diagnosis");
+
   /** Chart.js 読み込み */
   useEffect(() => {
     if (isChartJsLoaded) return;
@@ -1593,7 +1773,8 @@ const DigitalWellbeingApp: React.FC = () => {
     document.head.appendChild(script);
     return () => { document.head.removeChild(script); };
   }, [isChartJsLoaded]);
-  /** 初期ロード（ユーザー・アプリ統計・タブ・最後のユーザーIDを読み込み） */
+
+  /** 初期ロード */
   useEffect(() => {
     const loadedUsersRaw = loadFromLocalStorage<any[]>(KEY_USERS, []);
     const migratedUsers: User[] = loadedUsersRaw.map((u: any) => ({
@@ -1604,10 +1785,13 @@ const DigitalWellbeingApp: React.FC = () => {
     }));
     setUsers(migratedUsers);
     saveToLocalStorage(KEY_USERS, migratedUsers);
+
     const loadedAppStats = loadFromLocalStorage<AppStat[]>(KEY_APP_STATS, initialAppStats);
     setAppStats(loadedAppStats);
+
     const savedTab = loadFromLocalStorage(KEY_ACTIVE_TAB, "diagnosis");
     setActiveTab(savedTab as any);
+
     const lastId = loadFromLocalStorage<string | null>(KEY_LAST_USER_ID, null);
     if (lastId) {
       const u = migratedUsers.find(x => x.id === lastId);
@@ -1615,7 +1799,8 @@ const DigitalWellbeingApp: React.FC = () => {
     }
     setIsAppLoading(false);
   }, []);
-  /** 二重ガード：初期ロード完了後に dw_last_user_id を再確認して復元 */
+
+  /** 二重ガード：last user 復元 */
   useEffect(() => {
     if (isAppLoading) return;
     if (currentUser) return;
@@ -1624,13 +1809,16 @@ const DigitalWellbeingApp: React.FC = () => {
     const u = users.find(x => x.id === lastId);
     if (u) setCurrentUser(u);
   }, [isAppLoading, currentUser, users]);
+
   /** 保存 */
   useEffect(() => { saveToLocalStorage(KEY_ACTIVE_TAB, activeTab); }, [activeTab]);
   useEffect(() => { saveToLocalStorage(KEY_USERS, users); }, [users]);
   useEffect(() => { saveToLocalStorage(KEY_APP_STATS, appStats); }, [appStats]);
+
   /* タブ別スクロール位置の保存・復元 */
   const scrollSaveTimer = useRef<number | null>(null);
   const getScrollKey = (tab: string) => `${SCROLL_KEY_PREFIX}${tab}`;
+
   useEffect(() => {
     const onScroll = () => {
       if (scrollSaveTimer.current) window.clearTimeout(scrollSaveTimer.current);
@@ -1645,28 +1833,27 @@ const DigitalWellbeingApp: React.FC = () => {
       if (scrollSaveTimer.current) window.clearTimeout(scrollSaveTimer.current);
     };
   }, [activeTab]);
+
   useEffect(() => {
-    const savedY = loadFromLocalStorage<number>(getScrollKey(activeTab), 0);
     requestAnimationFrame(() => {
-      setTimeout(() => {
-        window.scrollTo(0, savedY);
-      }, 0);
+      setTimeout(() => { window.scrollTo(0, 0); }, 0);
     });
   }, [activeTab]);
+
   useEffect(() => {
     if (isAppLoading) return;
     const savedY = loadFromLocalStorage<number>(getScrollKey(activeTab), 0);
     requestAnimationFrame(() => {
-      setTimeout(() => {
-        window.scrollTo(0, savedY);
-      }, 0);
+      setTimeout(() => { window.scrollTo(0, savedY); }, 0);
     });
-  }, [isAppLoading]); // 一度だけ実行
+  }, [isAppLoading]);
+
   const resetAllTabScrollPositions = () => {
-    const tabs: Array<"diagnosis" | "personalize" | "resources" | "knowledge"> =
-      ["diagnosis", "personalize", "resources", "knowledge"];
-    tabs.forEach(tab => saveToLocalStorage(getScrollKey(tab), 0));
+    (["diagnosis", "personalize", "resources", "knowledge"] as const).forEach(tab =>
+      saveToLocalStorage(getScrollKey(tab), 0)
+    );
   };
+
   /** 認証ハンドラ */
   const handleRegister = (username: string, password: string, icon: string): boolean => {
     const dup = users.some(u => u.name === username);
@@ -1681,35 +1868,31 @@ const DigitalWellbeingApp: React.FC = () => {
     setCurrentUser(newUser);
     saveToLocalStorage(KEY_LAST_USER_ID, newUser.id);
     resetAllTabScrollPositions();
-    requestAnimationFrame(() => {
-      setTimeout(() => window.scrollTo(0, 0), 0);
-    });
+    requestAnimationFrame(() => { setTimeout(() => window.scrollTo(0, 0), 0); });
     return true;
   };
+
   const handleLogin = (username: string, password: string): boolean => {
     const user = users.find(u => u.name === username && u.password === password);
     if (!user) { return false; }
     setCurrentUser(user);
     saveToLocalStorage(KEY_LAST_USER_ID, user.id);
     resetAllTabScrollPositions();
-    requestAnimationFrame(() => {
-      setTimeout(() => window.scrollTo(0, 0), 0);
-    });
+    requestAnimationFrame(() => { setTimeout(() => window.scrollTo(0, 0), 0); });
     return true;
   };
+
   const handleAdminLogin = () => { setIsAdminMode(true); };
+
   const handleLogoutUser = () => {
     setCurrentUser(null);
     setIsAdminMode(false);
     setActiveTab("diagnosis");
-    if (typeof window !== "undefined") {
-      localStorage.removeItem(KEY_LAST_USER_ID);
-    }
+    removeFromLocalStorage(KEY_LAST_USER_ID);
     resetAllTabScrollPositions();
-    requestAnimationFrame(() => {
-      setTimeout(() => window.scrollTo(0, 0), 0);
-    });
+    requestAnimationFrame(() => { setTimeout(() => window.scrollTo(0, 0), 0); });
   };
+
   /** アカウント更新 */
   const updateCurrentUser = (nextName: string, nextPassword: string, nextIcon: string) => {
     if (!currentUser) return;
@@ -1718,18 +1901,33 @@ const DigitalWellbeingApp: React.FC = () => {
     saveToLocalStorage(KEY_USERS, nextUsers);
     setCurrentUser(prev => prev ? { ...prev, name: nextName, password: nextPassword, icon: nextIcon } : prev);
   };
+
   /** 管理者：ユーザー完全削除 */
   const onDeleteUserDeep = (userId: string) => {
     const nextUsers = users.filter(u => u.id !== userId);
     setUsers(nextUsers);
     saveToLocalStorage(KEY_USERS, nextUsers);
     const lastId = loadFromLocalStorage<string | null>(KEY_LAST_USER_ID, null);
-    if (lastId === userId) { localStorage.removeItem(KEY_LAST_USER_ID); }
+    if (lastId === userId) { removeFromLocalStorage(KEY_LAST_USER_ID); }
     if (currentUser && currentUser.id === userId) { setCurrentUser(null); setActiveTab("diagnosis"); }
     [KEY_ANSWERS, KEY_SCORE, KEY_RESULT, KEY_HISTORY, KEY_TYPE_RESULT, KEY_ACTIVE_TAB, KEY_USER_RATINGS].forEach((k) =>
-      localStorage.removeItem(getUserKey(k, userId))
+      removeFromLocalStorage(k, userId)
     );
   };
+
+  /** 本人アカウント削除：完全削除 -> 自動ログアウト -> 診断タブへ */
+  const handleDeleteOwnAccount = () => {
+    if (!currentUser) return;
+    const userId = currentUser.id;
+    onDeleteUserDeep(userId);
+    setCurrentUser(null);
+    setIsAdminMode(false);
+    setActiveTab("diagnosis");
+    removeFromLocalStorage(KEY_LAST_USER_ID);
+    resetAllTabScrollPositions();
+    requestAnimationFrame(() => { setTimeout(() => window.scrollTo(0, 0), 0); });
+  };
+
   /** 管理者：評価データ完全初期化（0件へ） */
   const onResetAllRatings = () => {
     const emptyStats = initialAppStats.map((app) => ({
@@ -1740,19 +1938,21 @@ const DigitalWellbeingApp: React.FC = () => {
       _agg: { successCount: 0, ratingSums: { effectiveness: 0, fun: 0, ease: 0, continuity: 0, design: 0 } },
     }));
     setAppStats(emptyStats);
-    users.forEach(u => { localStorage.removeItem(getUserKey(KEY_USER_RATINGS, u.id)); });
+    users.forEach(u => { removeFromLocalStorage(KEY_USER_RATINGS, u.id); });
     saveToLocalStorage(KEY_APP_STATS, emptyStats);
     alert("評価データを空の状態（0件）に初期化しました。");
   };
+
   /** 管理者：全ユーザー診断関連データ削除 */
   const onClearAllUserData = () => {
     users.forEach((u) => {
       [KEY_ANSWERS, KEY_SCORE, KEY_RESULT, KEY_HISTORY, KEY_TYPE_RESULT, KEY_ACTIVE_TAB].forEach((k) =>
-        localStorage.removeItem(getUserKey(k, u.id))
+        removeFromLocalStorage(k, u.id)
       );
     });
     alert("全ユーザーの診断関連データを削除しました。");
   };
+
   /** 管理者：デモ値適用（バックアップは保持） */
   const applyDemoStats = () => {
     const hasBackup = loadFromLocalStorage<AppStat[] | null>(KEY_APP_STATS_BACKUP, null);
@@ -1775,6 +1975,7 @@ const DigitalWellbeingApp: React.FC = () => {
     setAppStats(demo);
     saveToLocalStorage(KEY_APP_STATS, demo);
   };
+
   const restoreFromBackup = () => {
     const backup = loadFromLocalStorage<AppStat[] | null>(KEY_APP_STATS_BACKUP, null);
     if (!backup) {
@@ -1783,11 +1984,20 @@ const DigitalWellbeingApp: React.FC = () => {
     }
     setAppStats(backup);
     saveToLocalStorage(KEY_APP_STATS, backup);
-    if (typeof window !== "undefined") localStorage.removeItem(KEY_APP_STATS_BACKUP);
+    removeFromLocalStorage(KEY_APP_STATS_BACKUP);
   };
+
+  // ★ ここが今回の修正：全画面固定オーバーレイで Loading を中央表示
   if (isAppLoading) {
-    return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-400 font-bold">Loading...</div>;
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-50">
+        <div className="text-gray-500 text-sm md:text-base font-bold tracking-wide">
+          Loading...
+        </div>
+      </div>
+    );
   }
+
   if (isAdminMode) {
     return (
       <AdminPanel
@@ -1802,6 +2012,7 @@ const DigitalWellbeingApp: React.FC = () => {
       />
     );
   }
+
   return (
     <>
       <MainContent
@@ -1822,11 +2033,9 @@ const DigitalWellbeingApp: React.FC = () => {
         onLogin={handleLogin}
         onRegister={handleRegister}
         onAdminLogin={() => setIsAdminMode(true)}
-        onSuccess={() => {
-          setActiveTab("diagnosis");
-        }}
+        onSuccess={() => { setActiveTab("diagnosis"); }}
       />
-      {/* プロフィール設定モーダル */}
+      {/* プロフィール設定モーダル（アカウント削除対応） */}
       {currentUser && (
         <ProfileModal
           isOpen={isProfileOpen}
@@ -1834,11 +2043,13 @@ const DigitalWellbeingApp: React.FC = () => {
           currentUser={currentUser}
           users={users}
           onSubmit={(nextName, nextPassword, nextIcon) => updateCurrentUser(nextName, nextPassword, nextIcon)}
+          onDeleteCurrentUser={handleDeleteOwnAccount}
         />
       )}
     </>
   );
 };
+
 export default function Page() {
   return <DigitalWellbeingApp />;
 }
