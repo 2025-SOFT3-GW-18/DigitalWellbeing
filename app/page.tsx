@@ -22,7 +22,6 @@ interface TestHistoryRecord {
   recommendation: string;
   comparisonMessage?: string;
 }
-
 interface PendingResult {
   date: string;
   score: number;
@@ -31,10 +30,24 @@ interface PendingResult {
   comparisonMessage?: string;
 }
 
+type HobbyCost = "free" | "low" | "mid" | "high";
+type HobbyPlace = "indoor" | "outdoor";
+interface Hobby {
+  id: string;
+  name: string;
+  description: string;
+  minutes: number;
+  place: HobbyPlace;
+  firstStep: string;
+  supplies?: string[];
+  cost: HobbyCost;
+  icon?: string;
+}
+
 interface AppStat {
   id: string;
   name: string;
-  category: string;
+  category: "gamification" | "lock" | "family";
   icon: string;
   desc: string;
   url: string;
@@ -59,14 +72,16 @@ interface AppStat {
   };
 }
 
+type AddictionTypeId = "sns" | "game" | "habit" | "work";
 interface AddictionType {
-  id: string;
+  id: AddictionTypeId;
   name: string;
   icon: string;
   description: string;
   advice: string;
   recommendedCategories: string[];
   recommendedAppIds: string[];
+  recommendedHobbies?: Hobby[];
 }
 
 interface UserAppRating {
@@ -83,10 +98,9 @@ interface UserAppRating {
 type UserRatingsMap = { [appId: string]: UserAppRating };
 
 /* ===============================================
- 2. 定数定義
+ 2. 定数・データ
 =============================================== */
-const USER_ICONS = [
-  "🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐯","🦁","🐮","🐷","🐵","🐺","🐻‍❄️","🐨"
+const USER_ICONS = [  "🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐯","🦁","🐮","🐷","🐵","🐺","🐻‍❄️","🐨"
 ];
 
 const testQuestions = [
@@ -121,7 +135,7 @@ const SAME_SCORE_MESSAGES = [
   "変化はありません。油断すると増えてしまうので注意です。👀",
 ];
 
-const ADDICTION_TYPES: { [key: string]: AddictionType } = {
+const ADDICTION_TYPES: Record<AddictionTypeId, AddictionType> = {
   sns: {
     id: "sns",
     name: "SNS・承認欲求タイプ",
@@ -130,33 +144,65 @@ const ADDICTION_TYPES: { [key: string]: AddictionType } = {
     advice: "通知を完全にオフにする時間を設けるか、強制的にアプリをロックするツールが有効です。",
     recommendedCategories: ["lock"],
     recommendedAppIds: ["detox", "stayfree"],
+    recommendedHobbies: [
+      { id: "journaling", name: "ジャーナリング（手書きメモ）", description: "頭の中の『通知』を紙に逃がす。1日3行でOK。", minutes: 15, place: "indoor", firstStep: "ノートとペンを机に出し、今の気分を3行書く", supplies: ["ノート", "ペン"], cost: "free" },
+      { id: "letter", name: "手紙・はがき書き", description: "DMの代わりに“本物のメッセージ”を。短い一言でも嬉しい。", minutes: 30, place: "indoor", firstStep: "誰に一言伝えたいかを1人だけ書き出す", supplies: ["便箋・封筒", "切手"], cost: "low" },
+      { id: "evening_walk", name: "夕方の散歩", description: "通知をオフにして五感リセット。呼吸を意識。", minutes: 20, place: "outdoor", firstStep: "玄関のドアを開け、最初の角まで歩く", cost: "free" },
+ { id: "pottery_class", icon: "🏺", name: "陶芸体験・陶芸教室", description: "手触りと集中で“通知脳”をリセット。作品が形に残る。", minutes: 90, place: "indoor", firstStep: "最寄りの陶芸教室を検索して、体験コースを予約する", supplies: ["エプロン（あると安心）"], cost: "high" },
+ { id: "camera_walk", icon: "📷", name: "カメラ散歩（写真）", description: "“いいね”の代わりに“観察”へ。光と構図に没頭する。", minutes: 60, place: "outdoor", firstStep: "スマホは機内モードにして、近所で10枚だけ撮る", supplies: ["カメラ（またはレンズ）"], cost: "high" },
+ 
+    ],
   },
   game: {
     id: "game",
     name: "ゲーム・没頭タイプ",
     icon: "🎮",
-    description: "現実逃避や達成感を求めて、長時間ゲームや動画に没頭してしまうタイプです。",
-    advice: "「やめる」こと自体をゲーム化できるアプリや、育成要素のあるツールで置き換えましょう。",
+    description: "達成感や没頭を求めて、長時間ゲームや動画に入り込んでしまうタイプです。",
+    advice: "『やめる』こと自体をゲーム化するアプリや、育成要素のあるツールで置き換えましょう。",
     recommendedCategories: ["gamification"],
     recommendedAppIds: ["forest", "focus_quest"],
+    recommendedHobbies: [
+      { id: "boardgame", name: "ボードゲーム（2人〜）", description: "勝ち負けの面白さをアナログで。短時間ルールから。", minutes: 30, place: "indoor", firstStep: "家のトランプで『スピード』を1戦", supplies: ["トランプ/ボードゲーム"], cost: "mid" },
+      { id: "cooking", name: "料理でレシピ達成", description: "材料集めと完成で達成感を置き換える。", minutes: 40, place: "indoor", firstStep: "卵＋ご飯で『オムライス』に挑戦", supplies: ["食材", "調理器具"], cost: "mid" },
+      { id: "diy", name: "ミニDIY", description: "工具いらずの紙工作などで小物づくり。", minutes: 25, place: "indoor", firstStep: "牛乳パックで小物入れを作る", supplies: ["のり", "ハサミ", "紙素材"], cost: "low" },
+ { id: "climbing_gym", icon: "🧗", name: "ボルダリング（クライミングジム）", description: "攻略・試行錯誤がリアルで味わえる。上達が可視化される。", minutes: 75, place: "indoor", firstStep: "初心者講習のあるジムを探して、体験予約する", supplies: ["動きやすい服", "靴下"], cost: "high" },
+ { id: "drum_lesson", icon: "🥁", name: "ドラム・楽器レッスン", description: "達成感の置き換えに最強。リズムで没入できる。", minutes: 50, place: "indoor", firstStep: "体験レッスンを予約して1曲だけ叩く", supplies: ["スティック（レンタル可）"], cost: "high" },
+ 
+    ],
   },
   habit: {
     id: "habit",
     name: "無意識・習慣タイプ",
     icon: "👻",
-    description: "目的がないのに、手持ち無沙汰で無意識にスマホを触ってしまうタイプです。",
-    advice: "触った瞬間に「気づき」を与えるアプリや、利用時間の可視化ツールがおすすめです。",
+    description: "目的がないのに手持ち無沙汰で無意識にスマホを触ってしまうタイプです。",
+    advice: "触った瞬間の『気づき』や、利用時間の可視化ツールを取り入れましょう。",
     recommendedCategories: ["gamification", "lock"],
     recommendedAppIds: ["fish", "ubhind", "stop"],
+    recommendedHobbies: [
+      { id: "stretch", name: "1分ストレッチ×5本", description: "手持ち無沙汰の“埋め草”。短いルーティンで置き換え。", minutes: 5, place: "indoor", firstStep: "立ったまま肩回し30秒から", cost: "free" },
+      { id: "plant", name: "観葉植物の水やり", description: "“世話”行動でスマホから離れてリセット。", minutes: 10, place: "indoor", firstStep: "鉢を1つ用意して水やり", supplies: ["小さな観葉植物"], cost: "low" },
+      { id: "tidy", name: "机の上だけ片づけ", description: "範囲を狭くして“今すぐ”できる行動。", minutes: 7, place: "indoor", firstStep: "机の上の不要物を1つ捨てる", cost: "free" },
+ { id: "personal_gym", icon: "🏋️", name: "パーソナルジム（短期）", description: "“無意識に触る”を、予約と習慣で上書きする。", minutes: 60, place: "indoor", firstStep: "体験トレーニングを予約し、週1の固定枠を作る", supplies: ["トレーニングウェア", "室内シューズ"], cost: "high" },
+ { id: "road_bike", icon: "🚴", name: "ロードバイク（週末ライド）", description: "移動の没頭が強い。風と景色で五感が戻る。", minutes: 90, place: "outdoor", firstStep: "安全な周回コースを決めて、短距離（5km）から走る", supplies: ["ヘルメット", "ライト", "グローブ"], cost: "high" },
+ 
+    ],
   },
   work: {
     id: "work",
     name: "仕事・強迫観念タイプ",
     icon: "💼",
-    description: "休日や夜間でも仕事の連絡やニュースが気になり、脳が休まらないタイプです。",
-    advice: "時間帯で区切って利用制限する機能や、ペアレンタルコントロールの自己適用が有効です。",
+    description: "休日や夜間でも情報や連絡が気になって脳が休まらないタイプです。",
+    advice: "時間帯で区切る、デバイスを物理的に離すなどの強い遮断が有効です。",
     recommendedCategories: ["family", "lock"],
     recommendedAppIds: ["screentime", "detox"],
+    recommendedHobbies: [
+      { id: "reading", name: "紙の読書（15分）", description: "情報遮断の儀式。紙に触れると脳が切り替わる。", minutes: 15, place: "indoor", firstStep: "机に本を開いて“最初の1ページ”だけ読む", supplies: ["本"], cost: "low" },
+      { id: "bath", name: "湯に浸かる（20分）", description: "物理的にデバイスから離れる最強の遮断行動。", minutes: 20, place: "indoor", firstStep: "スマホは別室に置いて浴室へ", cost: "low" },
+      { id: "night_walk", name: "夜の散歩（ゆっくり）", description: "“歩くリズム”でメンタルを整える。", minutes: 20, place: "outdoor", firstStep: "コートを着て玄関ドアを開ける", cost: "free" },
+ { id: "tea_ceremony", icon: "🍵", name: "茶道（体験・教室）", description: "所作と呼吸で頭が静まる。情報過多を“儀式”で断つ。", minutes: 90, place: "indoor", firstStep: "体験会を探して予約し、当日はスマホを鞄の奥へ", supplies: ["白い靴下（足袋の代わり）"], cost: "high" },
+ { id: "massage_course", icon: "💆", name: "セルフケア講座（マッサージ/整体）", description: "身体の緊張を解くと、通知チェック衝動も落ちやすい。", minutes: 90, place: "indoor", firstStep: "1回完結の講座を申し込み、帰宅後5分だけ復習する", supplies: ["動きやすい服"], cost: "high" },
+ 
+    ],
   },
 };
 
@@ -195,7 +241,7 @@ const PERSONALIZE_QUESTIONS = [
 
 const initialAppStats: AppStat[] = [
   { id: "forest", name: "Forest", category: "gamification", icon: "🌲", desc: "集中時間に応じて「木」を育て、失敗すると枯れる。", url: "https://www.google.com/search?q=スマホアプリ+Forest", successRate: 85, totalVotes: 1240, ratings: { effectiveness: 4.5, fun: 4.8, ease: 4.0, continuity: 4.2, design: 5.0 } },
-  { id: "focus_quest", name: "Focus Quest", category: "gamification", icon: "🗺️", desc: "集中時間を「冒険」に見立て、目標達成でヒーローを育成。", url: "https://www.google.com/search?q=スマホアプリ+Focus+Quest", successRate: 78, totalVotes: 530, ratings: { effectiveness: 4.0, fun: 5.0, ease: 3.5, continuity: 4.5, design: 4.2 } },
+  { id: "focus_quest", name: "Focus Quest", category: "gamification", icon: "🗺️", desc: "集中時間を「冒険」に見立て、目標達成でヒーローを育成.", url: "https://www.google.com/search?q=スマホアプリ+Focus+Quest", successRate: 78, totalVotes: 530, ratings: { effectiveness: 4.0, fun: 5.0, ease: 3.5, continuity: 4.5, design: 4.2 } },
   { id: "fish", name: "スマホをやめれば魚が育つ", category: "gamification", icon: "🐟", desc: "スマホを置くことで、かわいい「魚」が水槽で成長。", url: "https://www.google.com/search?q=スマホアプリ+スマホをやめれば魚が育つ", successRate: 82, totalVotes: 320, ratings: { effectiveness: 3.8, fun: 4.2, ease: 5.0, continuity: 3.9, design: 4.0 } },
   { id: "focus_dog", name: "Focus Dog", category: "gamification", icon: "🐶", desc: "集中してドーナツを作り、相棒の犬を喜ばせる。", url: "https://www.google.com/search?q=スマホアプリ+Focus+Dog", successRate: 75, totalVotes: 210, ratings: { effectiveness: 3.5, fun: 4.5, ease: 4.5, continuity: 3.8, design: 4.8 } },
   { id: "detox", name: "Detox", category: "lock", icon: "🔒", desc: "シンプルなタイマー機能で、設定時間、スマホを強制ロック。", url: "https://www.google.com/search?q=スマホアプリ+Detox", successRate: 92, totalVotes: 890, ratings: { effectiveness: 5.0, fun: 2.0, ease: 4.8, continuity: 3.5, design: 3.0 } },
@@ -207,7 +253,7 @@ const initialAppStats: AppStat[] = [
 ];
 
 /* ===============================================
- 3. ストレージキー
+ 3. ストレージ・初期値・ヘルパー
 =============================================== */
 const KEY_USERS = "dw_users";
 const KEY_ANSWERS = "dw_testAnswers";
@@ -221,19 +267,12 @@ const KEY_ACTIVE_TAB = "dw_active_tab";
 const KEY_USER_RATINGS = "dw_userRatings";
 const KEY_APP_STATS_BACKUP = "dw_appStats_backup";
 const SCROLL_KEY_PREFIX = "dw_scroll_";
-/* 追加：未ログインの診断結果一時保存キー */
 const KEY_PENDING_RESULT = "dw_pending_result";
 
-/* ===============================================
- 4. 初期値
-=============================================== */
 const initialTestAnswers = new Array(testQuestions.length).fill(null);
 const initialTestScore: number | null = null;
 const initialTestResult: { level: string; recommendation: string } | null = null;
 
-/* ===============================================
- 5. ヘルパー
-=============================================== */
 const getUserKey = (key: string, userId: string) => `${userId}_${key}`;
 const loadFromLocalStorage = <T,>(key: string, defaultValue: T, userId?: string): T => {
   if (typeof window === "undefined") return defaultValue;
@@ -241,9 +280,9 @@ const loadFromLocalStorage = <T,>(key: string, defaultValue: T, userId?: string)
     const storageKey = userId ? getUserKey(key, userId) : key;
     const storedValue = localStorage.getItem(storageKey);
     if (storedValue === null || storedValue === "undefined") return defaultValue;
-    return JSON.parse(storedValue) as T;
-  } catch (error) {
-    console.error(`Error loading key ${key} from localStorage:`, error);
+    const parsed = JSON.parse(storedValue) as T;
+    return (parsed === null ? defaultValue : parsed);
+  } catch {
     return defaultValue;
   }
 };
@@ -252,83 +291,119 @@ const saveToLocalStorage = (key: string, value: any, userId?: string) => {
   try {
     const storageKey = userId ? getUserKey(key, userId) : key;
     localStorage.setItem(storageKey, JSON.stringify(value));
-  } catch (error) {
-    console.error(`Error saving key ${key} to localStorage:`, error);
-  }
+  } catch {}
 };
 const removeFromLocalStorage = (key: string, userId?: string) => {
   if (typeof window === "undefined") return;
   try {
     const storageKey = userId ? getUserKey(key, userId) : key;
     localStorage.removeItem(storageKey);
-  } catch (error) {
-    console.error(`Error removing key ${key} from localStorage:`, error);
-  }
+  } catch {}
 };
 const formatDate = (date: Date): string => date.toISOString().slice(0, 10).replace(/\-/g, "/");
 
 const getResultFromScore = (score: number) => {
   let level = "重度依存";
-  let recommendation =
-    "スマートフォンが生活を支配している可能性があります。\n専門家への相談も検討してください。";
-  if (score <= 6) {
-    level = "低依存";
-    recommendation =
-      "健康的な利用習慣が保たれています。\n今のバランスを大切にしてください。";
-  } else if (score <= 14) {
-    level = "軽度依存";
-    recommendation =
-      "少し依存の傾向が見られます。\n意識的にデジタルデトックスの時間を設けましょう。";
-  } else if (score <= 23) {
-    level = "中度依存";
-    recommendation =
-      "生活に支障が出始めています。\n具体的な対策を直ちに実行しましょう。";
-  }
+  let recommendation = "スマートフォンが生活を支配している可能性があります。\n専門家への相談も検討してください。";
+  if (score <= 6) { level = "低依存"; recommendation = "健康的な利用習慣が保たれています。\n今のバランスを大切にしてください。"; }
+  else if (score <= 14) { level = "軽度依存"; recommendation = "少し依存の傾向が見られます。\n意識的にデジタルデトックスの時間を設けましょう。"; }
+  else if (score <= 23) { level = "中度依存"; recommendation = "生活に支障が出始めています。\n具体的な対策を直ちに実行しましょう。"; }
   return { level, recommendation };
 };
 
 const getResultStyle = (level: string) => {
   switch (level) {
-    case "低依存":
-      return { bg: "bg-green-50", border: "border-green-300", text: "text-green-700", scoreText: "text-green-800", icon: "🌳" };
-    case "軽度依存":
-      return { bg: "bg-yellow-50", border: "border-yellow-300", text: "text-yellow-700", scoreText: "text-yellow-800", icon: "⚠️" };
-    case "中度依存":
-      return { bg: "bg-orange-50", border: "border-orange-300", text: "text-orange-700", scoreText: "text-orange-800", icon: "🔥" };
-    case "重度依存":
-      return { bg: "bg-red-50", border: "border-red-300", text: "text-red-700", scoreText: "text-red-800", icon: "🚨" };
-    default:
-      return { bg: "bg-gray-50", border: "border-gray-300", text: "text-gray-700", scoreText: "text-gray-800", icon: "❓" };
+    case "低依存": return { bg: "bg-green-50", border: "border-green-300", text: "text-green-700", scoreText: "text-green-800", icon: "🌳" };
+    case "軽度依存": return { bg: "bg-yellow-50", border: "border-yellow-300", text: "text-yellow-700", scoreText: "text-yellow-800", icon: "⚠️" };
+    case "中度依存": return { bg: "bg-orange-50", border: "border-orange-300", text: "text-orange-700", scoreText: "text-orange-800", icon: "🔥" };
+    case "重度依存": return { bg: "bg-red-50", border: "border-red-300", text: "text-red-700", scoreText: "text-red-800", icon: "🚨" };
+    default: return { bg: "bg-gray-50", border: "border-gray-300", text: "text-gray-700", scoreText: "text-gray-800", icon: "❓" };
   }
 };
 
 /* ===============================================
- ★ パスワード（8～16・半角英数字＋半角記号）
+ 4. UIユーティリティ
 =============================================== */
-const PASSWORD_MAX = 16;
+const PASSWORD_MAX = 64;
 const capPassword = (v: string) => v.replace(/[^\x21-\x7E]/g, "").slice(0, PASSWORD_MAX);
-const isValidPassword = (v: string) => /^[A-Za-z0-9\x21-\x7E]{8,16}$/.test(v);
+const isValidPassword = (v: string) => /^[A-Za-z0-9\x21-\x7E]{8,64}$/.test(v);
+
+const KEYBOARD_SETS = ["0123456789","abcdefghijklmnopqrstuvwxyz","qwertyuiop","asdfghjkl","zxcvbnm"];
+const hasTooManyRepeats = (pw: string) => /(.)\1\1\1/.test(pw);
+const hasSimpleSequence = (pw: string) => {
+  const s = pw.toLowerCase();
+  for (const seq of KEYBOARD_SETS) {
+    for (let i = 0; i <= seq.length - 4; i++) {
+      const sub = seq.slice(i, i + 4);
+      const rev = sub.split("").reverse().join("");
+      if (s.includes(sub) || s.includes(rev)) return true;
+    }
+  }
+  return false;
+};
+const COMMON_WEAK = ["password","qwerty","admin","letmein","iloveyou","welcome","monkey","dragon","abc123","111111","123456","123456789","zaq12wsx"];
+const hasCommonWeakWord = (pw: string) => COMMON_WEAK.some(w => pw.toLowerCase().includes(w));
+const checkWeakPatterns = (pw: string): string | null => {
+  if (hasTooManyRepeats(pw)) return "同一文字が4連続するパスワードは使用できません。";
+  if (hasSimpleSequence(pw)) return "連番・キーボード配列の単純な並びは使用できません。";
+  if (hasCommonWeakWord(pw)) return "一般的に知られた弱い単語を含むパスワードは使用できません。";
+  return null;
+};
+const estimateStrength = (pw: string) => {
+  if (!pw) return { score: 0, label: "未入力", percent: 0 };
+  if (checkWeakPatterns(pw)) return { score: 0, label: "弱い", percent: 0 };
+  if (pw.length <= 8) return { score: 0, label: "弱い", percent: 0 };
+  let base = pw.length <= 11 ? 1 : pw.length <= 15 ? 2 : pw.length <= 24 ? 3 : 4;
+  const bonuses = (/[A-Z]/.test(pw) ? 1 : 0) + (/[0-9]/.test(pw) ? 1 : 0) + (/[^A-Za-z0-9]/.test(pw) ? 1 : 0);
+  const score = Math.max(0, Math.min(4, base + bonuses));
+  const percent = Math.round((score / 4) * 100);
+  const label = score === 0 ? "弱い" : score === 1 ? "やや弱い" : score === 2 ? "ふつう" : score === 3 ? "やや強い" : "強い";
+  return { score, label, percent };
+};
+const PasswordStrengthInline: React.FC<{ password: string }> = ({ password }) => {
+  const [view, setView] = useState(estimateStrength(password));
+  useEffect(() => setView(estimateStrength(password)), [password]);
+  const barColor = view.percent < 25 ? "bg-red-400" : view.percent < 50 ? "bg-orange-400" : view.percent < 75 ? "bg-yellow-400" : "bg-green-500";
+  return (
+    <div className="mb-2">
+      <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+        <span>強度: <b className="text-gray-700">{view.label}</b></span>
+        <span>{view.percent}%</span>
+      </div>
+      <div className="h-2 bg-gray-200 rounded">
+        <div className={`h-2 ${barColor} rounded`} style={{ width: `${view.percent}%` }} />
+      </div>
+      {password && checkWeakPatterns(password) && (
+        <p className="mt-1 text-[11px] text-red-600 font-bold">{checkWeakPatterns(password)}</p>
+      )}
+    </div>
+  );
+};
+const useBodyScrollLock = (isOpen: boolean) => {
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (isOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = prev; };
+    }
+  }, [isOpen]);
+};
 
 /* ===============================================
- 6. グラフ・モーダル等のコンポーネント
+ 5. グラフ・モーダルなど
 =============================================== */
-const ResourceChart = ({ type, data, options, chartjsConstructor, isChartJsLoaded }: any) => {
+const ResourceChart = ({ type, data, options, plugins, chartjsConstructor, isChartJsLoaded }: any) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chartInstance = useRef<ChartInstance | null>(null);
-
   useEffect(() => {
     if (isChartJsLoaded && chartjsConstructor && canvasRef.current) {
       if (chartInstance.current) chartInstance.current.destroy();
       const ctx = canvasRef.current.getContext("2d");
-      if (ctx) {
-        chartInstance.current = new chartjsConstructor(ctx, { type, data, options });
-      }
+      if (ctx) chartInstance.current = new chartjsConstructor(ctx, { type, data, options, plugins });
     }
-    return () => {
-      if (chartInstance.current) chartInstance.current.destroy();
-    };
+    return () => { if (chartInstance.current) chartInstance.current.destroy(); };
   }, [data, options, type, chartjsConstructor, isChartJsLoaded]);
-
   if (!isChartJsLoaded) {
     return (
       <div className="h-32 bg-gray-100 rounded animate-pulse flex items-center justify-center text-xs text-gray-400">
@@ -343,8 +418,8 @@ const ResourceChart = ({ type, data, options, chartjsConstructor, isChartJsLoade
   );
 };
 
-const IconPicker = ({ value, onChange }: { value: string; onChange: (icon: string) => void; }) => (
-  <div className="w-full overflow-x-hidden overflow-y-auto max-h-40 p-1 rounded-lg bg-white border border-gray-200">
+const IconPicker = ({ value, onChange, heightClass }: { value: string; onChange: (icon: string) => void; heightClass?: string; }) => (
+  <div className={`w-full overflow-x-hidden overflow-y-auto ${heightClass ?? "max-h-40"} p-1 rounded-lg bg-white border border-gray-200`}>
     <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(40px,1fr))]">
       {USER_ICONS.map((ic) => (
         <button
@@ -352,10 +427,9 @@ const IconPicker = ({ value, onChange }: { value: string; onChange: (icon: strin
           type="button"
           onClick={() => onChange(ic)}
           title={ic}
-          className={`flex items-center justify-center aspect-square rounded-lg border transition leading-none select-none ${
-            value === ic
-              ? "bg-indigo-50 border-indigo-300 ring-2 ring-indigo-200"
-              : "bg-white border-gray-200 hover:bg-gray-100"
+          className={`flex items-center justify-center aspect-square rounded-lg border transition leading-none select-none ${value === ic
+            ? "bg-indigo-50 border-indigo-300 ring-2 ring-indigo-200"
+            : "bg-white border-gray-200 hover:bg-gray-100"
           }`}
         >
           <span className="text-base">{ic}</span>
@@ -365,25 +439,12 @@ const IconPicker = ({ value, onChange }: { value: string; onChange: (icon: strin
   </div>
 );
 
-/* 背景スクロール停止 */
-const useBodyScrollLock = (isOpen: boolean) => {
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    if (isOpen) {
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => { document.body.style.overflow = prev; };
-    }
-  }, [isOpen]);
-};
-
-/* --- 投票モーダル（二重送信防止） --- */
+/* --- 投票モーダル --- */
 const SurveyModal = ({ isOpen, onClose, app, onSubmit, onDelete, existingRating }: any) => {
   useBodyScrollLock(!!isOpen);
   const [isSuccess, setIsSuccess] = useState(true);
   const [ratings, setRatings] = useState({ effectiveness: 3, fun: 3, ease: 3, continuity: 3, design: 3 });
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   useEffect(() => {
     if (isOpen && app) {
       if (existingRating) {
@@ -396,7 +457,6 @@ const SurveyModal = ({ isOpen, onClose, app, onSubmit, onDelete, existingRating 
       setIsSubmitting(false);
     }
   }, [isOpen, app, existingRating]);
-
   if (!isOpen || !app) return null;
 
   const handleSubmit = () => {
@@ -436,12 +496,15 @@ const SurveyModal = ({ isOpen, onClose, app, onSubmit, onDelete, existingRating 
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
+
         <h3 className="font-bold text-lg text-gray-800 mb-4 flex items-center pr-10">
           <span className="text-2xl mr-2">{app.icon}</span> {app.name} の評価
         </h3>
+
         <div className="mb-2">
           <p className="text-xs text-gray-400 font-bold">※ このアプリへの評価は「1ユーザーにつき1回」です。あとから編集・削除できます。</p>
         </div>
+
         <div className="mb-4">
           <p className="font-bold text-sm text-gray-600 mb-2">目標は達成できましたか？</p>
           <div className="flex space-x-2">
@@ -449,6 +512,7 @@ const SurveyModal = ({ isOpen, onClose, app, onSubmit, onDelete, existingRating 
             <button onClick={() => setIsSuccess(false)} className={`flex-1 py-2 rounded-lg font-bold border transition ${!isSuccess ? "bg-red-100 border-red-400 text-red-800" : "bg-white border-gray-200 text-gray-400"}`}>いいえ</button>
           </div>
         </div>
+
         <div className="mb-6 space-y-3">
           <p className="font-bold text-sm text-gray-600">詳細評価 (★1-5)</p>
           {Object.keys(ratings).map((key) => (
@@ -466,6 +530,7 @@ const SurveyModal = ({ isOpen, onClose, app, onSubmit, onDelete, existingRating 
             </div>
           ))}
         </div>
+
         <button
           onClick={handleSubmit}
           disabled={isSubmitting}
@@ -473,6 +538,7 @@ const SurveyModal = ({ isOpen, onClose, app, onSubmit, onDelete, existingRating 
         >
           {existingRating ? "評価を更新" : "投票してデータを更新"}
         </button>
+
         {existingRating && (
           <button onClick={handleDelete} className="w-full mt-2 bg-red-50 hover:bg-red-100 text-red-700 font-bold py-2 rounded-lg transition border border-red-200">
             評価を削除
@@ -483,7 +549,7 @@ const SurveyModal = ({ isOpen, onClose, app, onSubmit, onDelete, existingRating 
   );
 };
 
-/* --- プロフィールモーダル（アカウント削除） --- */
+/* --- プロフィールモーダル --- */
 const ProfileModal = ({
   isOpen, onClose, currentUser, onSubmit, users, onDeleteCurrentUser,
 }: {
@@ -497,12 +563,14 @@ const ProfileModal = ({
   useBodyScrollLock(!!isOpen);
   const [name, setName] = useState(currentUser?.name ?? "");
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [icon, setIcon] = useState<string>(currentUser?.icon ?? USER_ICONS[0]);
 
   useEffect(() => {
     if (isOpen && currentUser) {
       setName(currentUser.name);
       setPassword("");
+      setPasswordConfirm("");
       setIcon(currentUser.icon ?? USER_ICONS[0]);
     }
   }, [isOpen, currentUser]);
@@ -513,16 +581,27 @@ const ProfileModal = ({
     e?.preventDefault();
     const newName = name.trim();
     const newPwInput = password.trim();
+    const newPwConfirmInput = passwordConfirm.trim();
     const finalPw = newPwInput === "" ? currentUser.password : newPwInput;
+
     if (!newName) { alert("ユーザー名を入力してください"); return; }
     if (newName.length > 10) { alert("ユーザー名は10文字以内で入力してください"); return; }
     const dup = users.some(u => u.name === newName && u.id !== currentUser.id);
     if (dup) { alert("そのユーザー名は既に使用されています。別の名前を入力してください。"); return; }
+
+    if (newPwInput !== "") {
+      if (capPassword(newPwInput) !== capPassword(newPwConfirmInput)) {
+        alert("確認用パスワードが一致しません"); return;
+      }
+      const weakMsg = checkWeakPatterns(newPwInput);
+      if (weakMsg) { alert(weakMsg); return; } // 修正: 変数名誤記防止（最終版では "weakMsg" を使用）
+    }
     if (!isValidPassword(finalPw)) {
-      alert("パスワードは 8～16 文字の半角英数字＋記号のみです（全角・スペース不可）");
+      alert("パスワードは 8～64 文字の「半角英数字記号」のみ利用できます（全角・スペース不可）");
       return;
     }
     if (!icon) { alert("アイコンを選択してください"); return; }
+
     onSubmit(newName, finalPw, icon);
     onClose();
     alert("アカウント情報を更新しました");
@@ -543,11 +622,18 @@ const ProfileModal = ({
 
   return (
     <div className="fixed inset-0 bg-gray-900/70 z-[100] flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 relative" onClick={(e) => e.stopPropagation()}>
-        <button className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 transition p-2 rounded-full bg-gray-100 hover:bg-gray-200" onClick={onClose} title="閉じる">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-5 relative" onClick={(e) => e.stopPropagation()}>
+        <button
+          className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 transition p-2 rounded-full bg-gray-100 hover:bg-gray-200"
+          onClick={onClose}
+          title="閉じる"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
         </button>
-        <h3 className="text-xl font-extrabold text-gray-800 mb-4 text-center">アカウント設定</h3>
+
+        <h3 className="text-xl font-extrabold text-gray-800 mb-3 text-center">アカウント設定</h3>
 
         <form onSubmit={submit}>
           <label className="block text-sm font-bold text-gray-600 mb-2">ユーザー名（10文字以内）</label>
@@ -558,22 +644,37 @@ const ProfileModal = ({
             placeholder="ユーザー名"
             maxLength={10}
           />
-          <label className="block text-sm font-bold text-gray-600 mb-2">パスワード（8～16・半角英数字記号）</label>
+
+          <label className="block text-sm font-bold text-gray-600 mb-2">パスワード（8～64文字の半角英数字・記号）</label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(capPassword(e.target.value))}
             maxLength={PASSWORD_MAX}
-            className="w-full p-3 border border-gray-300 rounded-lg mb-4"
+            className="w-full p-3 border border-gray-300 rounded-lg mb-1"
             placeholder="********"
           />
+          <PasswordStrengthInline password={password} />
+
+          <label className="block text-sm font-bold text-gray-600 mb-2">パスワード（確認）</label>
+          <input
+            type="password"
+            value={passwordConfirm}
+            onChange={(e) => setPasswordConfirm(capPassword(e.target.value))}
+            maxLength={PASSWORD_MAX}
+            className="w-full p-3 border border-gray-300 rounded-lg mb-3"
+            placeholder="********"
+          />
+
           <label className="block text-sm font-bold text-gray-600 mb-2">アイコン</label>
-          <IconPicker value={icon} onChange={setIcon} />
-          <button type="submit" className="mt-4 w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition">更新する</button>
+          <IconPicker value={icon} onChange={setIcon} heightClass="h-24" />
+
+          <button type="submit" className="mt-3 w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition">
+            更新する
+          </button>
         </form>
 
-        <div className="mt-4 pt-4 border-t border-red-200">
-          <p className="text-xs text-red-600 font-bold mb-2">⚠️ アカウント削除（復元不可）</p>
+        <div className="mt-3 pt-3 border-t border-red-200">
           <button
             type="button"
             onClick={handleDeleteAccount}
@@ -601,10 +702,17 @@ const UnifiedAuthModal = ({
   const [mode, setMode] = useState<"login" | "register">("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [icon, setIcon] = useState<string>(USER_ICONS[0]);
 
   useEffect(() => {
-    if (isOpen) { setMode("login"); setUsername(""); setPassword(""); setIcon(USER_ICONS[0]); }
+    if (isOpen) {
+      setMode("login");
+      setUsername("");
+      setPassword("");
+      setPasswordConfirm("");
+      setIcon(USER_ICONS[0]);
+    }
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -614,42 +722,49 @@ const UnifiedAuthModal = ({
     const name = username.trim();
     if (!name) { alert("ユーザー名を入力してください"); return; }
     if (name.length > 10) { alert("ユーザー名は10文字以内で入力してください"); return; }
-    if (name === "admin" && password === "admin") { onAdminLogin(); onClose(); return; }
+    if (name === "admin" && password === "admin") { onAdminLogin(); onClose(); onSuccess("login"); return; }
     const ok = onLogin(name, password);
     if (ok) { onClose(); onSuccess("login"); } else alert("ユーザー名またはパスワードが正しくありません");
   };
 
   const submitRegister = (e?: React.FormEvent) => {
     e?.preventDefault();
-    const name = username.trim(); const pw = capPassword(password);
+    const name = username.trim();
+    const pw = capPassword(password);
+    const pwc = capPassword(passwordConfirm);
     if (!name) { alert("ユーザー名を入力してください"); return; }
     if (name.length > 10) { alert("ユーザー名は10文字以内で入力してください"); return; }
-    if (!isValidPassword(pw)) { alert("パスワードは 8～16 文字の「半角英数字記号」のみ利用できます（全角・スペース不可）"); return; }
+    if (pw !== pwc) { alert("確認用パスワードが一致しません"); return; }
+    if (!isValidPassword(pw)) { alert("パスワードは 8～64 文字の「半角英数字記号」のみ利用できます（全角・スペース不可）"); return; }
+    const weakMsg = checkWeakPatterns(pw);
+    if (weakMsg) { alert(weakMsg); return; }
     if (!icon) { alert("アイコンを選択してください"); return; }
     const ok = onRegister(name, pw, icon);
     if (ok) { onClose(); onSuccess("register"); }
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-900/70 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-gray-900/70 z-[100000] flex items-center justify-center p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 relative" onClick={(e) => e.stopPropagation()}>
         <button className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 transition p-2 rounded-full bg-gray-100 hover:bg-gray-200" onClick={onClose} title="閉じる">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
+
         {mode === "login" ? (
           <>
             <h3 className="text-xl font-extrabold text-gray-800 mb-4 text-center">ログイン</h3>
             <form onSubmit={submitLogin}>
               <label className="block text-sm font-bold text-gray-600 mb-2">ユーザー名（10文字以内）</label>
               <input value={username} onChange={(e) => setUsername(e.target.value.slice(0, 10))} className="w-full p-3 border border-gray-300 rounded-lg mb-3" placeholder="ユーザー名" maxLength={10} />
-              <label className="block text-sm font-bold text-gray-600 mb-2">パスワード（8～16・半角英数字記号）</label>
+              <label className="block text-sm font-bold text-gray-600 mb-2">パスワード（8～64文字の半角英数字・記号）</label>
               <input type="password" value={password} onChange={(e) => setPassword(capPassword(e.target.value))} maxLength={PASSWORD_MAX} className="w-full p-3 border border-gray-300 rounded-lg mb-4" placeholder="********" />
               <button type="submit" className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition">ログイン</button>
             </form>
+
             <p className="mt-3 text-xs text-gray-400 text-center">管理者（admin / admin）もこちらからログインできます</p>
             <div className="mt-3 text-center">
               <span className="text-xs text-gray-500 mr-1">アカウントを作成しませんか？</span>
-              <button type="button" onClick={() => { setMode("register"); setPassword(""); }} className="text-xs text-indigo-600 underline hover:text-indigo-700">ユーザー登録へ</button>
+              <button type="button" onClick={() => { setMode("register"); setPassword(""); setPasswordConfirm(""); }} className="text-xs text-indigo-600 underline hover:text-indigo-700">ユーザー登録へ</button>
             </div>
           </>
         ) : (
@@ -658,15 +773,19 @@ const UnifiedAuthModal = ({
             <form onSubmit={submitRegister}>
               <label className="block text-sm font-bold text-gray-600 mb-2">ユーザー名（10文字以内）</label>
               <input value={username} onChange={(e) => setUsername(e.target.value.slice(0, 10))} className="w-full p-3 border border-gray-300 rounded-lg mb-3" placeholder="ユーザー名" maxLength={10} />
-              <label className="block text-sm font-bold text-gray-600 mb-2">パスワード（8～16・半角英数字記号）</label>
-              <input type="password" value={password} onChange={(e) => setPassword(capPassword(e.target.value))} maxLength={PASSWORD_MAX} className="w-full p-3 border border-gray-300 rounded-lg mb-3" placeholder="********" />
+              <label className="block text-sm font-bold text-gray-600 mb-2">パスワード（8～64文字の半角英数字・記号）</label>
+              <input type="password" value={password} onChange={(e) => setPassword(capPassword(e.target.value))} maxLength={PASSWORD_MAX} className="w-full p-3 border border-gray-300 rounded-lg mb-1" placeholder="********" />
+              <PasswordStrengthInline password={password} />
+              <label className="block text-sm font-bold text-gray-600 mb-2">パスワード（確認）</label>
+              <input type="password" value={passwordConfirm} onChange={(e) => setPasswordConfirm(capPassword(e.target.value))} maxLength={PASSWORD_MAX} className="w-full p-3 border border-gray-300 rounded-lg mb-3" placeholder="********" />
               <label className="block text-sm font-bold text-gray-600 mb-2">アイコン</label>
-              <IconPicker value={icon} onChange={setIcon} />
+              <IconPicker value={icon} onChange={setIcon} heightClass="h-24" />
               <button type="submit" className="mt-4 w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition">登録する</button>
             </form>
+
             <div className="mt-3 text-center">
               <span className="text-xs text-gray-500 mr-1">すでにアカウントをお持ちですか？</span>
-              <button type="button" onClick={() => { setMode("login"); setPassword(""); }} className="text-xs text-indigo-600 underline hover:text-indigo-700">ログインへ</button>
+              <button type="button" onClick={() => { setMode("login"); setPassword(""); setPasswordConfirm(""); }} className="text-xs text-indigo-600 underline hover:text-indigo-700">ログインへ</button>
             </div>
           </>
         )}
@@ -708,9 +827,15 @@ const AdminActionDemoModal = ({
   const demoStats = generateDemoStats(currentAppStats);
   const previewStats = useDemoPreview
     ? demoStats
-    : currentAppStats.map(app => ({ ...app, successRate: 0, totalVotes: 0, ratings: { effectiveness: 0, fun: 0, ease: 0, continuity: 0, design: 0 }, }));
+    : currentAppStats.map((app) => ({
+        ...app,
+        successRate: 0,
+        totalVotes: 0,
+        ratings: { effectiveness: 0, fun: 0, ease: 0, continuity: 0, design: 0 },
+      }));
 
   const userKeys = [KEY_ANSWERS, KEY_SCORE, KEY_RESULT, KEY_HISTORY, KEY_TYPE_RESULT, KEY_ACTIVE_TAB];
+
   const confirmExecute = () => {
     if (confirm("全ユーザーの診断履歴・結果・タイプを削除します。よろしいですか？")) onExecute();
   };
@@ -725,18 +850,26 @@ const AdminActionDemoModal = ({
         {mode === "ratings" ? (
           <>
             <h3 className="text-xl font-extrabold text-gray-800 mb-4">評価データ初期化（プレビュー）</h3>
+
             <div className="mb-3 flex items-center justify-between">
               <p className="text-sm text-gray-600">
                 {useDemoPreview ? "デモデータでプレビュー表示中" : "実行後（初期化後）のプレビュー表示中"}
               </p>
-              <button onClick={() => setUseDemoPreview(v => !v)} className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded font-bold transition">
+              <button
+                onClick={() => setUseDemoPreview(v => !v)}
+                className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded font-bold transition"
+              >
                 プレビュー切替
               </button>
             </div>
+
             <div className="max-h-64 overflow-auto border rounded p-3 bg-gray-50">
               {previewStats.map((app) => (
                 <div key={app.id} className="text-sm text-gray-700 border-b last:border-b-0 py-2">
-                  <div className="flex items-center"><span className="text-xl mr-2">{app.icon}</span><span className="font-bold">{app.name}</span></div>
+                  <div className="flex items-center">
+                    <span className="text-xl mr-2">{app.icon}</span>
+                    <span className="font-bold">{app.name}</span>
+                  </div>
                   <div className="ml-8 text-xs text-gray-500">
                     成功率: <span className="font-bold">{app.successRate}%</span> ／ 投票: <span className="font-bold">{app.totalVotes}</span>件 ／
                     評価(平均): <span className="font-bold">
@@ -746,17 +879,17 @@ const AdminActionDemoModal = ({
                 </div>
               ))}
             </div>
+
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button onClick={onApplyDemo} className="py-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-800 border border-yellow-200 rounded-lg font-bold">デモとして適用</button>
-              <button onClick={onRestore} className="py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg font-bold">
-                元に戻す（0件へ初期化）
-              </button>
+              <button onClick={onRestore} className="py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg font-bold">元に戻す（0件へ初期化）</button>
             </div>
           </>
         ) : (
           <>
             <h3 className="text-xl font-extrabold text-gray-800 mb-4">全ユーザーデータ削除（プレビュー）</h3>
             <p className="text-sm text-gray-600 mb-3">実行後、各ユーザーの以下のキーが削除されます。</p>
+
             <div className="max-h-64 overflow-auto border rounded p-3 bg-gray-50">
               {users.length === 0 ? (
                 <p className="text-sm text-gray-400">ユーザーがいません。</p>
@@ -769,11 +902,9 @@ const AdminActionDemoModal = ({
                 </div>
               ))}
             </div>
+
             <div className="mt-4">
-              <button
-                onClick={confirmExecute}
-                className="w-full py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg font-bold"
-              >
+              <button onClick={confirmExecute} className="w-full py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg font-bold">
                 すべてのユーザーデータを削除する
               </button>
             </div>
@@ -784,21 +915,13 @@ const AdminActionDemoModal = ({
   );
 };
 
-/* --- アプリカード --- */
+/* --- アプリカード／リソースセクション --- */
 const AppCard = ({ app, chartjsConstructor, isChartJsLoaded, onOpenSurvey }: any) => {
   const pieData = { labels: ["成功", "失敗"], datasets: [{ data: [app.successRate, 100 - app.successRate], backgroundColor: ["#4ade80", "#e5e7eb"], borderWidth: 0 }] };
   const pieOptions = { plugins: { legend: { display: false }, tooltip: { enabled: false } }, maintainAspectRatio: false };
   const radarData = {
     labels: ["効果", "楽しさ", "手軽さ", "継続性", "デザイン"],
-    datasets: [{
-      label: "評価",
-      data: [app.ratings.effectiveness, app.ratings.fun, app.ratings.ease, app.ratings.continuity, app.ratings.design],
-      backgroundColor: "rgba(99, 102, 241, 0.2)",
-      borderColor: "rgba(99, 102, 241, 1)",
-      borderWidth: 1,
-      pointBackgroundColor: "rgba(99, 102, 241, 1)",
-      pointRadius: 1
-    }]
+    datasets: [{ label: "評価", data: [app.ratings.effectiveness, app.ratings.fun, app.ratings.ease, app.ratings.continuity, app.ratings.design], backgroundColor: "rgba(99, 102, 241, 0.2)", borderColor: "rgba(99, 102, 241, 1)", borderWidth: 1, pointBackgroundColor: "rgba(99, 102, 241, 1)", pointRadius: 1 }]
   };
   const radarOptions= { plugins: { legend: { display: false } }, scales: { r: { min: 0, max: 5, ticks: { display: false, stepSize: 1 }, pointLabels: { display: true, font: { size: 9 }, color: "#4b5563" } } }, maintainAspectRatio: false };
 
@@ -812,7 +935,9 @@ const AppCard = ({ app, chartjsConstructor, isChartJsLoaded, onOpenSurvey }: any
             <p className="text-xs text-gray-500">{app.totalVotes}件の評価</p>
           </div>
         </div>
+
         <p className="text-sm text-gray-600 mb-3 min-h-[40px]">{app.desc}</p>
+
         <div className="flex gap-2">
           <a href={app.url} target="_blank" rel="noopener noreferrer" className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg font-bold transition">検索する 🔍</a>
           <button onClick={() => onOpenSurvey(app)} className="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-2 rounded-lg font-bold transition">投票する 🗳️</button>
@@ -882,7 +1007,6 @@ const KnowledgeSection = () => {
       </div>
     </a>
   );
-
   return (
     <div className="space-y-6">
       <div className="bg-purple-50 border-purple-200 border rounded-xl p-6 shadow-sm">
@@ -907,37 +1031,422 @@ const KnowledgeSection = () => {
   );
 };
 
-/* --- パーソナライズ診断 --- */
-const PersonalizeSection = ({ currentUser, appStats, chartjsConstructor, isChartJsLoaded, onOpenSurvey }: any) => {
-  const savedResult = currentUser ? loadFromLocalStorage(KEY_TYPE_RESULT, null, currentUser.id) : null;
-  const initialStep = savedResult ? "result" : "intro";
+/* ===============================================
+ 6. 趣味UI（カード＋詳細モーダル＋セクション）
+=============================================== */
+type HobbyWithType = Hobby & { typeId: AddictionTypeId; typeName: string; typeIcon: string };
+type HobbyFlat = Hobby & { typeId: AddictionTypeId };
+
+const HOBBY_COST_LABELS: Record<HobbyCost, string> = {
+  free: "無料（0円）",
+  low: "低コスト（〜1,000円）",
+  mid: "中コスト（〜5,000円）",
+  high: "高コスト（5,000円〜）",
+};
+const HOBBY_COST_COLOR: Record<HobbyCost, string> = {
+  free: "bg-green-50 text-green-800 border-green-200",
+  low: "bg-teal-50 text-teal-800 border-teal-200",
+  mid: "bg-yellow-50 text-yellow-800 border-yellow-200",
+  high: "bg-red-50 text-red-800 border-red-200",
+};
+
+
+// 趣味アイコン（未指定の場合のフォールバック）
+const HOBBY_ICON_MAP: Record<string, string> = {
+  journaling: "📝",
+  letter: "✉️",
+  evening_walk: "🚶",
+  boardgame: "🃏",
+  cooking: "🍳",
+  diy: "🛠️",
+  stretch: "🧘",
+  plant: "🪴",
+  tidy: "🧹",
+  reading: "📚",
+  bath: "🛁",
+  night_walk: "🌙",
+  // 追加したhigh系（念のため）
+  pottery_class: "🏺",
+  camera_walk: "📷",
+  climbing_gym: "🧗",
+  drum_lesson: "🥁",
+  personal_gym: "🏋️",
+  road_bike: "🚴",
+  tea_ceremony: "🍵",
+  massage_course: "💆",
+};
+
+const getHobbyIcon = (hobby: Hobby) => {
+  if (hobby.icon) return hobby.icon;
+  const byId = HOBBY_ICON_MAP[hobby.id];
+  if (byId) return byId;
+  return hobby.place === "outdoor" ? "✨" : "✨";
+};
+
+// 屋内・屋外の表示（アイコン付き）
+const getPlaceMeta = (place: HobbyPlace) => {
+  return place === "outdoor"
+    ? { label: "屋外", icon: "☀️" }
+    : { label: "屋内", icon: "🏠" };
+};
+
+const HobbyDetailModal: React.FC<{
+  hobby: Hobby | null;
+  open: boolean;
+  onClose: () => void;
+}> = ({ hobby, open, onClose }) => {
+  useBodyScrollLock(open);
+  if (!open || !hobby) return null;
+  const diff = (() => {
+  const timeScore = hobby.minutes;
+  const suppliesScore = (hobby.supplies?.length ?? 0) * 5;
+  const placeScore = hobby.place === "outdoor" ? 8 : 0;
+  const costScore = hobby.cost === "high" ? 10 : hobby.cost === "mid" ? 5 : hobby.cost === "low" ? 2 : 0;
+  const total = timeScore + suppliesScore + placeScore + costScore;
+  return total <= 12 ? "初級" : total <= 25 ? "中級" : "上級";
+})();
+  return (
+    <div className="fixed inset-0 z-50 bg-gray-900/70 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
+        <button className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 transition p-2 rounded-full bg-gray-100 hover:bg-gray-200" onClick={onClose} aria-label="閉じる">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+
+        <h3 className="text-xl font-extrabold text-gray-800">{getHobbyIcon(hobby)} <span className="ml-2">{hobby.name}</span></h3>
+        <p className="mt-1 text-sm text-gray-600">{hobby.description}</p>
+
+        <div className="mt-4 flex flex-wrap gap-2 text-xs">
+          <span className="px-2 py-1 rounded bg-purple-50 text-purple-700 border border-purple-200">難易度：{diff}</span>
+          <span className={`px-2 py-1 rounded border ${HOBBY_COST_COLOR[hobby.cost]}`}>初期費用：{HOBBY_COST_LABELS[hobby.cost]}</span>
+          <span className="px-2 py-1 rounded bg-gray-100 text-gray-700">{getPlaceMeta(hobby.place).icon} {getPlaceMeta(hobby.place).label}</span>
+          
+        </div>
+
+        <div className="mt-4 p-3 rounded border border-teal-200 bg-teal-50">
+          <p className="text-sm font-bold text-teal-800">最初の一歩</p>
+          <p className="text-sm text-teal-900">{hobby.firstStep}</p>
+        </div>
+
+        {hobby.supplies?.length ? (
+          <div className="mt-3 p-3 rounded border border-indigo-200 bg-indigo-50">
+            <p className="text-sm font-bold text-indigo-800">準備物</p>
+            <p className="text-sm text-indigo-900">{hobby.supplies.join("、")}</p>
+          </div>
+        ) : null}
+
+        <div className="mt-6 flex items-center gap-2">
+          <button onClick={onClose} className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-bold transition hover:bg-gray-50">閉じる</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const HobbyCard: React.FC<{
+  hobby: Hobby;
+  typeIcon: string;
+  typeName: string;
+  onOpenDetail: (h: Hobby) => void;
+}> = ({ hobby, typeIcon, typeName, onOpenDetail }) => {
+  const diff = (() => {
+  const timeScore = hobby.minutes;
+  const suppliesScore = (hobby.supplies?.length ?? 0) * 5;
+  const placeScore = hobby.place === "outdoor" ? 8 : 0;
+  const costScore = hobby.cost === "high" ? 10 : hobby.cost === "mid" ? 5 : hobby.cost === "low" ? 2 : 0;
+  const total = timeScore + suppliesScore + placeScore + costScore;
+  return total <= 12 ? "初級" : total <= 25 ? "中級" : "上級";
+})();
+  return (
+    <div className="text-sm bg-white border border-purple-100 rounded-xl p-4 shadow-sm">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex w-7 h-7 items-center justify-center rounded-lg bg-purple-100 text-purple-700 text-sm">{getHobbyIcon(hobby)}</span>
+          <p className="font-bold text-gray-800">{hobby.name}</p>
+        </div>
+</div>
+
+      <p className="mt-2 text-gray-600">{hobby.description}</p>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+        <span className="px-2 py-1 rounded bg-purple-50 text-purple-700 border border-purple-200">難易度：{diff}</span>
+        <span className={`px-2 py-1 rounded border ${HOBBY_COST_COLOR[hobby.cost]}`}>初期費用：{HOBBY_COST_LABELS[hobby.cost]}</span>
+        <span className="px-2 py-1 rounded bg-gray-100 text-gray-700">{getPlaceMeta(hobby.place).icon} {getPlaceMeta(hobby.place).label}</span>
+        <span className="px-2 py-1 rounded bg-white border border-gray-200 text-gray-700">タイプ：{typeIcon} {typeName}</span>
+      </div>
+
+      <div className="mt-4">
+        <button onClick={() => onOpenDetail(hobby)} className="text-xs bg-white border border-indigo-300 text-indigo-700 px-3 py-2 rounded font-bold transition hover:bg-indigo-50">詳細を見る</button>
+      </div>
+    </div>
+  );
+};
+
+/* === 趣味セクション（セレクト削除／カードクリックで自動スクロール） === */
+type SimpleFilters = { difficulty: "all" | "easy" | "normal" | "hard"; cost: "all" | HobbyCost };
+
+const HobbySection: React.FC<{ currentUser: User | null; onGoPersonalize: () => void }> = ({ currentUser, onGoPersonalize }) => {
+  const savedTypeResult = currentUser
+    ? loadFromLocalStorage<AddictionType | null>(KEY_TYPE_RESULT, null, currentUser.id)
+    : loadFromLocalStorage<AddictionType | null>(KEY_TYPE_RESULT, null);
+
+  // 初期タイプ：診断済みならそのタイプ／未診断なら sns
+  const [currentTypeId, setCurrentTypeId] = React.useState<AddictionTypeId>(
+    (savedTypeResult?.id as AddictionTypeId) ?? "sns"
+  );
+
+  // おすすめセクションへの参照（自動スクロール用）
+  const recoSectionRef = React.useRef<HTMLDivElement>(null);
+
+  const KEY_SIMPLE_FILTERS = "dw_hobby_simple_filters";
+  const [filters, setFilters] = React.useState<SimpleFilters>(
+    loadFromLocalStorage<SimpleFilters>(KEY_SIMPLE_FILTERS, { difficulty: "all", cost: "all" })
+  );
+  React.useEffect(() => { saveToLocalStorage(KEY_SIMPLE_FILTERS, filters); }, [filters]);
+
+  const [detailOpen, setDetailOpen] = React.useState(false);
+  const [detailTarget, setDetailTarget] = React.useState<Hobby | null>(null);
+  const openDetail = (h: Hobby) => { setDetailTarget(h); setDetailOpen(true); };
+  const closeDetail = () => setDetailOpen(false);
+
+  const currentType: AddictionType | null = ADDICTION_TYPES[currentTypeId] ?? null;
+
+  const allHobbiesFlat: HobbyFlat[] = React.useMemo(() => {
+    return (Object.values(ADDICTION_TYPES) as AddictionType[]).flatMap((t) =>
+      (t.recommendedHobbies ?? []).map((h) => ({ ...h, typeId: t.id }))
+    );
+  }, []);
+
+  const recommendedForCurrentType: Hobby[] = currentType?.recommendedHobbies ?? [];
+
+  const filtered: HobbyFlat[] = React.useMemo(() => {
+    return allHobbiesFlat.filter((h) => {
+      const score = (h.minutes) + ((h.supplies?.length ?? 0) * 5) + (h.place === "outdoor" ? 8 : 0) + (h.cost === "high" ? 10 : h.cost === "mid" ? 5 : h.cost === "low" ? 2 : 0);
+const diff: "easy" | "normal" | "hard" = score <= 12 ? "easy" : score <= 25 ? "normal" : "hard";
+      const passDiff = filters.difficulty === "all" || filters.difficulty === diff;
+      const passCost =
+        filters.cost === "all" ||
+        filters.cost === h.cost ||
+        (filters.cost === "low" && (h.cost === "free" || h.cost === "low"));
+      return passDiff && passCost;
+    });
+  }, [allHobbiesFlat, filters]);
+
+  const groups: Record<HobbyCost, HobbyFlat[]> = { free: [], low: [], mid: [], high: [] };
+  filtered.forEach((h) => groups[h.cost].push(h));
+
+  const TypePickCard: React.FC<{ t: AddictionType }> = ({ t }) => {
+    const isRecommended = !!savedTypeResult && savedTypeResult.id === t.id;
+    const handlePick = () => {
+      setCurrentTypeId(t.id);
+      // レイアウト更新後にスムーズスクロール
+      setTimeout(() => {
+        recoSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
+    };
+    return (
+      <div className={`p-4 bg-white border rounded-xl shadow-sm flex items-start gap-3 ${isRecommended ? "border-amber-300 ring-2 ring-amber-200" : "border-purple-100"}`}>
+        <div className="text-3xl">{t.icon}</div>
+        <div className="flex-1">
+          <p className="font-bold text-gray-800 flex items-center gap-2">{t.name}{isRecommended && (<span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 font-extrabold">おすすめ</span>)}</p>
+          <p className="text-xs text-gray-600 mt-1">{t.description}</p>
+          <div className="mt-3 flex gap-2">
+            <button
+              onClick={handlePick}
+              className="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-2 rounded font-bold border border-indigo-200 transition"
+            >{isRecommended ? "このタイプでおすすめを見る" : "このタイプでおすすめを見る"}</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* ヘッダー */}
+      <div className="bg-white border border-purple-100 rounded-xl p-6 shadow-sm">
+        <h2 className="text-xl md:text-2xl font-bold text-purple-800 flex items-center gap-2"><span>📗</span> 趣味（アナログ置き換え）おすすめカタログ</h2>
+        <p className="mt-2 text-sm text-gray-600">デジタルデトックスやリラックスに向いた趣味をタイプ別に紹介します。難易度・コストで絞り込みもできます。</p>
+      </div>
+
+      {/* あなたへのおすすめ（タイプ別） */}
+      <div className="bg-purple-50 border border-purple-200 rounded-xl p-6 shadow-sm">
+        <p className="text-sm font-bold text-purple-700 flex items-center gap-2"><span>🍃</span> あなたへのおすすめ</p>
+        <p className="mt-1 text-xs text-gray-600">タイプを選択すると、あなた向けのおすすめが表示されます。</p>
+
+      {!savedTypeResult && (
+        <div className="mt-4 p-4 rounded-lg bg-white border border-purple-200 text-sm text-gray-700">
+          <p className="font-extrabold text-purple-700 mb-1">まだタイプ診断が完了していません</p>
+          <p className="text-xs text-gray-600 mb-3">3問であなたの傾向を判定し、あなたへのおすすめを自動表示します。</p>
+          <button onClick={onGoPersonalize} className="text-xs bg-teal-600 hover:bg-teal-700 text-white font-bold px-4 py-2 rounded-lg transition">タイプ診断へ移動する</button>
+        </div>
+      )}
+
+        {/* タイプ選択（セレクトは削除／カードのみ常時表示） */}
+        <div className="mt-6 space-y-3">
+          <p className="text-xs font-bold text-gray-700">タイプを選択</p>
+      {savedTypeResult && (
+        <div className="mt-2 p-3 rounded-lg bg-white/70 border border-purple-200 text-xs text-gray-700">
+          <span className="font-extrabold text-purple-700">あなたの診断結果：</span>
+          <span className="ml-1">{savedTypeResult.icon} {savedTypeResult.name}</span>
+          <span className="ml-2 text-gray-500">（おすすめバッジのカードが該当）</span>
+        </div>
+      )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {(Object.values(ADDICTION_TYPES) as AddictionType[]).map((t) => (
+              <TypePickCard key={t.id} t={t} />
+            ))}
+          </div>
+        </div>
+
+        {/* おすすめカード（選択タイプを下に表示） */}
+        <div className="mt-6 scroll-mt-24" ref={recoSectionRef}>
+          <p className="text-xs font-bold text-gray-700 mb-2">選択したタイプのおすすめ趣味</p>
+          {currentType && recommendedForCurrentType.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {recommendedForCurrentType.map((h) => (
+                <HobbyCard
+                  key={`${currentTypeId}-${h.id}`}
+                  hobby={h}
+                  typeIcon={currentType.icon}
+                  typeName={currentType.name}
+                  onOpenDetail={openDetail}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-xs text-gray-400">（このタイプのおすすめを準備中です）</div>
+          )}
+        </div>
+      </div>
+
+      {/* フィルタ */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+        <p className="text-sm font-bold text-gray-700 flex items-center gap-2"><span>🔎</span> 趣味を絞り込む</p>
+
+        {/* 難易度 */}
+        <div className="mt-4">
+          <p className="text-xs font-bold text-gray-700 mb-2">難易度</p>
+          <div className="flex flex-wrap gap-2">
+            {(["all","easy","normal","hard"] as const).map((id) => (
+              <button
+                key={id}
+                onClick={() => setFilters((prev) => ({ ...prev, difficulty: id }))}
+                className={`text-xs px-3 py-1.5 rounded-full border font-bold transition ${
+                  filters.difficulty === id
+                    ? "bg-purple-600 text-white border-purple-600"
+                    : "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"
+                }`}
+              >
+                {id==="all" ? "全て" : id==="easy" ? "初級" : id==="normal" ? "中級" : "上級"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* コスト */}
+        <div className="mt-4">
+          <p className="text-xs font-bold text-gray-700 mb-2">初期費用・コスト</p>
+          <div className="flex flex-wrap gap-2">
+            {(["all","free","low","mid","high"] as const).map((id) => (
+              <button
+                key={id}
+                onClick={() => setFilters((prev) => ({ ...prev, cost: id }))}
+                className={`text-xs px-3 py-1.5 rounded-full border font-bold transition ${
+                  filters.cost === id
+                    ? "bg-green-600 text-white border-green-600"
+                    : "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                }`}
+              >
+                {id==="all" ? "全て" : id==="free" ? "無料" : id==="low" ? "低コスト" : id==="mid" ? "中コスト" : "高コスト"}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 一覧（常時表示） */}
+      <div className="space-y-6">
+        {(["free","low","mid","high"] as HobbyCost[]).map((cost) => (
+          <div key={cost}>
+            <div className={`inline-flex items-center px-2 py-1 mb-3 rounded border text-xs font-bold ${HOBBY_COST_COLOR[cost]}`}>
+              {HOBBY_COST_LABELS[cost]} <span className="ml-1 text-gray-400">（{groups[cost].length}件）</span>
+            </div>
+            {groups[cost].length === 0 ? (
+              <div className="text-xs text-gray-400">（該当なし）</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {groups[cost].map((h) => {
+                  const t = ADDICTION_TYPES[h.typeId];
+                  return (
+                    <HobbyCard
+                      key={`${h.typeId}-${h.id}`}
+                      hobby={h}
+                      typeIcon={t.icon}
+                      typeName={t.name}
+                      onOpenDetail={openDetail}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* 詳細モーダル */}
+      <HobbyDetailModal hobby={detailTarget} open={detailOpen} onClose={closeDetail} />
+    </div>
+  );
+};
+
+/* ===============================================
+ 7. パーソナライズ診断
+=============================================== */
+const PersonalizeSection = ({
+  currentUser,
+  appStats,
+  chartjsConstructor,
+  isChartJsLoaded,
+  onOpenSurvey,
+}: {
+  currentUser: User | null;
+  appStats: AppStat[];
+  chartjsConstructor: ChartConstructor;
+  isChartJsLoaded: boolean;
+  onOpenSurvey: (app: AppStat) => void;
+}) => {
+  const savedResult = currentUser ? loadFromLocalStorage<AddictionType | null>(KEY_TYPE_RESULT, null, currentUser.id) : loadFromLocalStorage<AddictionType | null>(KEY_TYPE_RESULT, null);
+  const initialStep: "intro" | "question" | "result" = savedResult ? "result" : "intro";
   const [step, setStep] = useState<"intro" | "question" | "result">(initialStep);
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
-  const [scores, setScores] = useState<{[key: string]: number}>({ sns: 0, game: 0, habit: 0, work: 0 });
-  const [resultType, setResultType] = useState<AddictionType | null>(savedResult);
+  const [scores, setScores] = useState<Record<AddictionTypeId, number>>({ sns: 0, game: 0, habit: 0, work: 0 });
+  const [resultType, setResultType] = useState<AddictionType | null>(savedResult || null);
+
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailTarget, setDetailTarget] = useState<Hobby | null>(null);
+  const openDetail = (h: Hobby) => { setDetailTarget(h); setDetailOpen(true); };
+  const closeDetail = () => setDetailOpen(false);
 
   const handleStart = () => { setStep("question"); setCurrentQuestionIdx(0); setScores({ sns: 0, game: 0, habit: 0, work: 0 }); };
-  const handleAnswer = (type: string) => {
+  const handleAnswer = (type: AddictionTypeId) => {
     const newScores = { ...scores, [type]: scores[type] + 1 };
     setScores(newScores);
     if (currentQuestionIdx < PERSONALIZE_QUESTIONS.length - 1) {
       setCurrentQuestionIdx(currentQuestionIdx + 1);
     } else {
-      let maxScore = -1; let maxType: keyof typeof ADDICTION_TYPES = "habit";
-      Object.entries(newScores).forEach(([key, val]) => { if (val > maxScore) { maxScore = val; maxType = key as keyof typeof ADDICTION_TYPES; } });
+      const maxType = (Object.keys(newScores) as AddictionTypeId[]).reduce((a, b) => newScores[a] >= newScores[b] ? a : b, "habit");
       const result = ADDICTION_TYPES[maxType];
       setResultType(result);
       if (currentUser) saveToLocalStorage(KEY_TYPE_RESULT, result, currentUser.id);
+      else saveToLocalStorage(KEY_TYPE_RESULT, result);
       setStep("result");
     }
   };
-  const handleRetake = () => { setResultType(null); if (currentUser) saveToLocalStorage(KEY_TYPE_RESULT, null, currentUser.id); handleStart(); };
+  const handleRetake = () => { setResultType(null); if (currentUser) saveToLocalStorage(KEY_TYPE_RESULT, null, currentUser.id); else saveToLocalStorage(KEY_TYPE_RESULT, null); handleStart(); };
 
-  const recommendedApps = resultType ? appStats
-    .filter((app: AppStat) =>
-      resultType!.recommendedAppIds.includes(app.id) ||
-      (resultType!.recommendedCategories.includes(app.category) && Math.random() > 0.5)
-    ).slice(0, 3) : [];
+  const recommendedApps = resultType
+    ? appStats.filter((app) => resultType.recommendedAppIds.includes(app.id)).slice(0, 3)
+    : [];
 
   if (step === "intro") {
     return (
@@ -948,15 +1457,16 @@ const PersonalizeSection = ({ currentUser, appStats, chartjsConstructor, isChart
           <p className="text-gray-600 mb-8 leading-relaxed">
             依存の形は人それぞれです。<br/>
             SNS、ゲーム、無意識の癖…<br/>
-            あなたの傾向を分析し、最適な対策アプリを提案します。
+            あなたの傾向を分析し、最適な対策アプリとアナログ趣味を提案します。
           </p>
           <button onClick={handleStart} className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 px-10 rounded-full shadow-lg transition transform hover:scale-105">
-            診断をはじめる (3問)
+            診断をはじめる（3問）
           </button>
         </div>
       </div>
     );
   }
+
   if (step === "question") {
     const q = PERSONALIZE_QUESTIONS[currentQuestionIdx];
     return (
@@ -967,8 +1477,8 @@ const PersonalizeSection = ({ currentUser, appStats, chartjsConstructor, isChart
           </div>
           <h3 className="text-xl font-bold text-gray-800 mb-8">{q.text}</h3>
           <div className="space-y-3">
-            {q.options.map((opt: any, idx: number) => (
-              <button key={idx} onClick={() => handleAnswer(opt.type)} className="w-full text-left p-4 rounded-lg border border-gray-200 hover:bg-teal-50 hover:border-teal-300 transition font-semibold text-gray-700">
+            {q.options.map((opt, idx) => (
+              <button key={idx} onClick={() => handleAnswer(opt.type as AddictionTypeId)} className="w-full text-left p-4 rounded-lg border border-gray-200 hover:bg-teal-50 hover:border-teal-300 transition font-semibold text-gray-700">
                 {opt.label}
               </button>
             ))}
@@ -977,6 +1487,8 @@ const PersonalizeSection = ({ currentUser, appStats, chartjsConstructor, isChart
       </div>
     );
   }
+
+  // result
   return (
     <div className="max-w-3xl mx-auto pt-6">
       <div className="bg-white p-8 rounded-xl shadow-lg border-t-4 border-teal-500 mb-8 text-center">
@@ -989,12 +1501,36 @@ const PersonalizeSection = ({ currentUser, appStats, chartjsConstructor, isChart
           <button onClick={handleRetake} className="text-sm text-gray-400 underline hover:text-teal-600">もう一度診断する</button>
         </div>
       </div>
+
       <h3 className="text-xl font-bold text-gray-700 mb-4 flex items-center"><span className="mr-2">🎁</span> あなたへの提案アプリ</h3>
       <div className="space-y-4">
-        {recommendedApps.map((app: any) => (
+        {recommendedApps.map((app) => (
           <AppCard key={app.id} app={app} chartjsConstructor={chartjsConstructor} isChartJsLoaded={isChartJsLoaded} onOpenSurvey={onOpenSurvey} />
         ))}
       </div>
+
+      <h3 className="mt-8 text-xl font-bold text-gray-700 mb-4 flex items-center"><span className="mr-2">🧶</span> あなたへのアナログ趣味の提案</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {resultType?.recommendedHobbies?.map((h) => (
+          <div key={h.id} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+            <p className="font-bold text-gray-800">{h.name}</p>
+            <p className="text-sm text-gray-600 mt-1">{h.description}</p>
+            <div className="mt-2 text-xs text-gray-500 flex gap-2 flex-wrap">
+              
+              <span className="px-2 py-1 bg-gray-100 rounded">{getPlaceMeta(h.place).icon} {getPlaceMeta(h.place).label}</span>
+              <span className={`px-2 py-1 rounded border ${HOBBY_COST_COLOR[h.cost]}`}>コスト：{HOBBY_COST_LABELS[h.cost]}</span>
+            </div>
+            <p className="mt-2 text-sm font-bold text-teal-700">最初の一歩：{h.firstStep}</p>
+            {h.supplies?.length ? <p className="mt-1 text-xs text-gray-500">準備物：{h.supplies.join("、")}</p> : null}
+            <button onClick={() => openDetail(h)} className="mt-3 text-xs bg-white border border-indigo-300 text-indigo-700 px-3 py-2 rounded font-bold transition hover:bg-indigo-50">
+              詳細を見る
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* 詳細モーダル */}
+      <HobbyDetailModal hobby={detailTarget} open={detailOpen} onClose={closeDetail} />
     </div>
   );
 };
@@ -1010,17 +1546,21 @@ const HistoryDetailModal = ({ isOpen, onClose, record }: { isOpen: boolean; onCl
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 transition p-2 rounded-full bg-gray-100 hover:bg-gray-200" aria-label="閉じる">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
+
         <div className="text-center mb-6">
           <p className="text-sm font-bold text-gray-500 mb-1">{record.date} の記録</p>
           <h3 className="text-2xl font-extrabold text-gray-800">診断結果詳細</h3>
         </div>
+
         <div className={`p-6 ${style.bg} border-2 ${style.border} rounded-xl shadow-inner mb-6`}>
           <h4 className={`text-xl font-extrabold ${style.text} mb-4 flex items-center`}><span className="text-2xl mr-2">{style.icon}</span> {record.level}</h4>
           <p className="text-lg font-bold mb-4">スコア: <span className={`${style.scoreText} text-2xl`}>{record.score}</span> / 30</p>
+
           <div className="border-t pt-4 border-gray-300/50">
             <h5 className={`font-bold ${style.text} mb-2`}>当時のアドバイス:</h5>
             <p className="text-gray-800 whitespace-pre-line leading-relaxed">{record.recommendation}</p>
           </div>
+
           {record.comparisonMessage && (
             <div className="mt-4 p-4 bg-white rounded-lg border-l-4 border-indigo-500 shadow-sm">
               <p className="font-bold text-indigo-800 flex items-start"><span className="mr-2 text-xl">💬</span>{record.comparisonMessage}</p>
@@ -1033,9 +1573,13 @@ const HistoryDetailModal = ({ isOpen, onClose, record }: { isOpen: boolean; onCl
 };
 
 /* --- 診断テストモーダル --- */
-const AddictionTestModal = React.memo(({
+
+
+/* --- 診断テストモーダル（派手FX/ good・bad切替 / 外側黒背景もFX / 結果は上から） --- */
+const AddictionTestModal = React.memo((({
   isOpen, setIsModalOpen, testQuestions, testAnswers, handleAnswerChange, calculateScore,
   resetTest, testResult, testTotalScore, handleOptionClick, comparisonMessage, isLoggedIn, onLoginForHistory,
+  chartjsConstructor, isChartJsLoaded, testHistory,
 }: {
   isOpen: boolean; setIsModalOpen: (v: boolean) => void;
   testQuestions: string[]; testAnswers: number[]; handleAnswerChange: (idx: number, score: number) => void;
@@ -1043,45 +1587,458 @@ const AddictionTestModal = React.memo(({
   testResult: { level: string; recommendation: string } | null; testTotalScore: number | null;
   handleOptionClick: (e: React.MouseEvent) => void; comparisonMessage: string | null;
   isLoggedIn: boolean; onLoginForHistory: () => void;
+  chartjsConstructor: ChartConstructor; isChartJsLoaded: boolean; testHistory: TestHistoryRecord[];
 }) => {
+  // ✅ Hooksは必ず同じ順序で呼ぶ（Rules of Hooks）
   useBodyScrollLock(!!isOpen);
+  const modalBodyRef = useRef<HTMLDivElement>(null);
+
+  // ✅ 結果表示に切り替わったらスクロールを最上部へ
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!testResult) return;
+    requestAnimationFrame(() => {
+      try {
+        modalBodyRef.current?.scrollTo({ top: 0, behavior: "auto" });
+      } catch {
+        if (modalBodyRef.current) (modalBodyRef.current as any).scrollTop = 0;
+      }
+    });
+  }, [isOpen, testResult?.level, testTotalScore]);
+  // ★ベスト（●と同じサイズ感）：キャンバスに★を描画して pointStyle に使用
+  const bestPointStyle = React.useMemo(() => {
+    if (typeof document === "undefined") return "star" as any;
+    const c = document.createElement("canvas");
+    c.width = 24;
+    c.height = 24;
+    const ctx = c.getContext("2d");
+    if (!ctx) return "star" as any;
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.font = "18px system-ui, -apple-system, Segoe UI, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    // 白縁
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "rgba(255,255,255,0.95)";
+    ctx.strokeText("★", 12, 12);
+    // 本体
+    ctx.fillStyle = "#f59e0b";
+    ctx.fillText("★", 12, 12);
+    return c;
+  }, []);
+
+
   if (!isOpen) return null;
 
-  const answeredCount = testAnswers.filter((s: any) => s !== null && s !== undefined).length;
+  // ✅ testAnswers が壊れていても落ちない
+  const safeAnswers: any[] = Array.isArray(testAnswers)
+    ? (testAnswers as any[])
+    : new Array(testQuestions.length).fill(null);
+
+  const answeredCount = safeAnswers.filter((s: any) => s !== null && s !== undefined).length;
   const isAllAnswered = answeredCount === testQuestions.length;
 
   const options = [
     { label: "全くない (0点)", score: 0, class: "border-green-400 bg-green-50 text-green-700 hover:bg-green-100" },
     { label: "たまにある (1点)", score: 1, class: "border-yellow-400 bg-yellow-50 text-yellow-700 hover:bg-yellow-100" },
     { label: "よくある (2点)", score: 2, class: "border-orange-400 bg-orange-50 text-orange-700 hover:bg-orange-100" },
-    { label: "ほとんどいつも (3点)", score: 3, class: "border-red-400 bg-red-50 text-red-700 hover:bg-red-100" }
+    { label: "ほとんどいつも (3点)", score: 3, class: "border-red-400 bg-red-50 text-red-700 hover:bg-red-100" },
   ];
 
   const style = testResult ? getResultStyle(testResult.level) : null;
 
+  // ===== 指標 =====
+  const MAX_SCORE = testQuestions.length * 3;
+  const getPrevRecordSafe = () => {
+    if (!testHistory?.length) return null;
+    const today = formatDate(new Date());
+    const head = testHistory[0];
+    if (head?.date === today && head?.score === (testTotalScore ?? head.score)) return testHistory[1] ?? null;
+    return head ?? null;
+  };
+  const prevRecord = getPrevRecordSafe();
+  const prevScore = prevRecord?.score ?? null;
+  const delta = (prevScore === null || testTotalScore === null) ? null : (testTotalScore - prevScore);
+
+  const isBadLevel = !!testResult && (testResult.level === "中度依存" || testResult.level === "重度依存");
+  const fxMode: "good" | "bad" | "neutral" =
+    !testResult ? "neutral" : (isBadLevel || (delta !== null && delta > 0)) ? "bad" : (delta !== null && delta < 0) ? "good" : "neutral";
+
+  const historyScores = (testHistory ?? []).map(r => r.score).filter(v => typeof v === "number" && !Number.isNaN(v));
+  const scorePool = [testTotalScore, ...historyScores].filter(v => typeof v === "number" && !Number.isNaN(v)) as number[];
+  const bestScoreSoFar = scorePool.length ? Math.min(...scorePool) : 0;
+  const isBestUpdate = (testTotalScore !== null) ? (testTotalScore <= bestScoreSoFar) : false;
+
+  const calcImproveStreak = () => {
+    const scores = (testHistory ?? []).map(r => r.score).filter(v => typeof v === "number" && !Number.isNaN(v));
+    const newestFirst = (testTotalScore !== null && scores[0] !== testTotalScore) ? [testTotalScore, ...scores] : scores;
+    let s = 0;
+    for (let i = 0; i < Math.min(10, newestFirst.length - 1); i++) {
+      if (newestFirst[i] < newestFirst[i + 1]) s++;
+      else break;
+    }
+    return s;
+  };
+  const improveStreak = calcImproveStreak();
+
+  const getNextTarget = (score: number) => {
+    if (score <= 6) return null;
+    if (score <= 14) return { label: "低依存", threshold: 6 };
+    if (score <= 23) return { label: "軽度依存", threshold: 14 };
+    return { label: "中度依存", threshold: 23 };
+  };
+  const nextTarget = (testTotalScore !== null) ? getNextTarget(testTotalScore) : null;
+  const pointsToNext = (testTotalScore !== null && nextTarget) ? (testTotalScore - nextTarget.threshold) : null;
+
+  const estimateMinutesPerPoint = 5;
+  const recoveredMinutesPerDay = (delta !== null && delta < 0) ? Math.abs(delta) * estimateMinutesPerPoint : 0;
+
+  const headline =
+    delta === null ? "診断結果" :
+    delta < 0 ? `前回より ${delta}点。良い流れです！` :
+    delta > 0 ? `前回より +${delta}点（今日は増えただけ）` :
+    "前回と同じ。安定できています";
+
+  const subline =
+    delta === null ? "変化は少しずつでOK。続けるほど楽になります。" :
+    delta < 0 ? `目安：1日あたり約 ${recoveredMinutesPerDay} 分の時間を取り戻す方向です（推定）` :
+    delta > 0 ? "疲れやストレスの日は増えやすいです。まずは深呼吸。環境を整えるだけで楽になります。" :
+    "維持できるのは立派。次は環境を整えるとラクになります。";
+
+  // ===== 表彰状カード（勝利の瞬間ファースト） =====
+  const certificate = (() => {
+    // ベスト更新が最優先
+    if (isBestUpdate && testTotalScore !== null) {
+      return {
+        title: "🏆 自己ベスト更新！",
+        big: `スコア ${testTotalScore}`,
+        stamp: "BEST SCORE",
+        message: "この記録は“保存版”です。次も同じ流れでいけます。",
+      };
+    }
+    if (delta === null) {
+      return {
+        title: "📄 診断完了",
+        big: `スコア ${testTotalScore ?? "—"}`,
+        stamp: "CHECKED",
+        message: subline,
+      };
+    }
+    if (delta < 0) {
+      return {
+        title: `🎉 前回より ${delta}点！`,
+        big: `${delta}点`,
+        stamp: "GREAT JOB",
+        message: subline,
+      };
+    }
+    if (delta > 0) {
+      return {
+        title: `🛠 今日は増えた日（+${delta}）`,
+        big: `+${delta}点`,
+        stamp: "RESET DAY",
+        message: subline,
+      };
+    }
+    return {
+      title: "🧊 安定キープ！",
+      big: "±0点",
+      stamp: "KEEP GOING",
+      message: subline,
+    };
+  })();
+
+  // ===== CERTIFICATEスタンプ：状態ごとに色＆点滅 =====
+  const stampTheme = (() => {
+    switch (certificate.stamp) {
+      case "BEST SCORE":
+        return { base: "border-amber-300/70 bg-amber-50", text: "text-amber-800", blink: "rgba(245,158,11,0.55)" };
+      case "CHECKED":
+        return { base: "border-slate-300/70 bg-slate-50", text: "text-slate-700", blink: "rgba(148,163,184,0.45)" };
+      case "GREAT JOB":
+        return { base: "border-emerald-300/70 bg-emerald-50", text: "text-emerald-800", blink: "rgba(16,185,129,0.50)" };
+      case "RESET DAY":
+        return { base: "border-rose-300/70 bg-rose-50", text: "text-rose-800", blink: "rgba(244,63,94,0.50)" };
+      case "KEEP GOING":
+      default:
+        return { base: "border-indigo-300/70 bg-indigo-50", text: "text-indigo-800", blink: "rgba(99,102,241,0.50)" };
+    }
+  })();
+
+  const stampStyle = {
+    ["--dw-blink" as any]: stampTheme.blink,
+  } as React.CSSProperties;
+
+
+  // ===== グラフ =====
+  const recent = (testHistory ?? []).slice(0, 10).reverse();
+  const scoresChrono = recent.map(r => r.score);
+  const isImprovedPoint = scoresChrono.map((v, i) => i === 0 ? false : v < scoresChrono[i - 1]);
+  const minInRecent = scoresChrono.length ? Math.min(...scoresChrono) : null;
+  const isBestPoint = scoresChrono.map(v => (minInRecent !== null) && v === minInRecent);
+  const movingAvg3 = scoresChrono.map((_, i) => {
+    const start = Math.max(0, i - 2);
+    const slice = scoresChrono.slice(start, i + 1);
+    const avg = slice.reduce((a, b) => a + b, 0) / slice.length;
+    return Number(avg.toFixed(1));
+  });
+
+  const pointRadius = scoresChrono.map(() => 4);
+  const pointBg = scoresChrono.map((_, i) => (isBestPoint[i] ? "#f59e0b" : "#6366F1"));
+  const pointStyle = scoresChrono.map((_, i) => (isBestPoint[i] ? bestPointStyle : "circle"));
+
+  
+
+  
+  // ===== 推移グラフ 背景色（スコア帯） =====
+  const scoreBandsPlugin = {
+    id: "scoreBands",
+    beforeDraw(chart: any, _args: any, opts: any) {
+      const { ctx, chartArea, scales } = chart;
+      if (!ctx || !chartArea || !scales?.y) return;
+      const yScale = scales.y;
+      const bands = (opts?.bands ?? []) as { from: number; to: number; color: string }[];
+      if (!bands.length) return;
+
+      const { left, right, top, bottom } = chartArea;
+      ctx.save();
+      for (const b of bands) {
+        const yTop = yScale.getPixelForValue(b.to);
+        const yBottom = yScale.getPixelForValue(b.from);
+        const y = Math.max(top, Math.min(yTop, yBottom));
+        const h = Math.min(bottom, Math.max(yTop, yBottom)) - y;
+        if (h > 0) {
+          ctx.fillStyle = b.color;
+          ctx.fillRect(left, y, right - left, h);
+        }
+      }
+      ctx.restore();
+    },
+  };
+const sparkData = {
+    labels: recent.map(r => r.date),
+    datasets: [
+      {
+        label: "スコア",
+        data: scoresChrono,
+        borderColor: "#6366F1",
+        backgroundColor: "rgba(99,102,241,0.12)",
+        tension: 0.35,
+        pointRadius,
+        pointBackgroundColor: pointBg,
+        pointStyle,
+        borderWidth: 2,
+        fill: true,
+      }
+    ]
+  };
+
+  const sparkOptions = {
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        enabled: true,
+        displayColors: false,
+        padding: 10,
+        backgroundColor: "rgba(17,24,39,0.92)",
+        titleColor: "#fff",
+        bodyColor: "#fff",
+        borderColor: "rgba(255,255,255,0.15)",
+        borderWidth: 1,
+        callbacks: {
+          title: (items: any) => items?.[0]?.label ?? "",
+          label: (item: any) => {
+            const i = item.dataIndex;
+            const y = item.parsed.y;
+            const best = !!isBestPoint?.[i];
+            return `スコア: ${y}${best ? "（★ベスト）" : ""}`;
+          },
+          afterLabel: (item: any) => {
+            const i = item.dataIndex;
+            const curr = item.parsed.y;
+            const prev = i > 0 ? scoresChrono[i - 1] : null;
+            if (prev === null || prev === undefined) return "";
+            const d = curr - prev;
+            const sign = d > 0 ? "+" : "";
+            return `前回比: ${sign}${d}`;
+          },
+        },
+      },
+      // 背景の色帯（スコア帯をわかりやすく）
+      scoreBands: {
+        bands: [
+          { from: 0, to: 6, color: "rgba(34,197,94,0.10)" },
+          { from: 6, to: 14, color: "rgba(250,204,21,0.10)" },
+          { from: 14, to: 23, color: "rgba(249,115,22,0.10)" },
+          { from: 23, to: 30, color: "rgba(244,63,94,0.10)" },
+        ],
+      },
+    },
+    interaction: {
+      mode: "nearest",
+      intersect: true,
+    },
+    elements: {
+      point: {
+        hitRadius: 10,
+        hoverRadius: 6,
+      },
+      line: {
+        borderWidth: 2,
+      },
+    },
+    scales: {
+      x: {
+        display: true,
+        grid: { display: false },
+        ticks: {
+          maxTicksLimit: 6,
+          color: "#6b7280",
+          font: { size: 10, weight: "bold" },
+          callback: (value: any, index: number) => {
+            const label = (recent[index]?.date ?? "").replace(/-/g, "/");
+            return label.length >= 10 ? label.slice(5) : label;
+          },
+        },
+      },
+      y: {
+        display: true,
+        beginAtZero: true,
+        suggestedMax: 30,
+        ticks: {
+          stepSize: 5,
+          color: "#6b7280",
+          font: { size: 10, weight: "bold" },
+        },
+        grid: { color: "rgba(107,114,128,0.15)" },
+      },
+    },
+    maintainAspectRatio: false,
+  };
+
   return (
-    <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-[100]">
-      <div className={`bg-white w-full max-w-[92vw] md:max-w-[800px] max-h-[99svh] md:max-h-[96.5vh] ${testResult ? 'overflow-hidden' : 'overflow-auto'} rounded-lg shadow-2xl p-2 md:p-4 relative`} onClick={(e) => e.stopPropagation()}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} className="relative" onClick={() => setIsModalOpen(false)}>
+      {/* ===== 外側（黒背景）FX：派手 ===== */}
+      <div className={`dwfx-outer ${fxMode}`} aria-hidden="true">
+        <div className="dwfx-outer__grad" />
+        <div className="dwfx-outer__noise" />
+        <div className="dwfx-outer__glow" />
+        <div className="dwfx-outer__streak" />
+        <div className="dwfx-outer__particles">
+          {Array.from({ length: 54 }).map((_, i) => (
+            <span key={i} className={`p p${i + 1}`} />
+          ))}
+        </div>
+      </div>
+
+      {/* 暗幕（黒背景） */}
+      <div style={{ position: "fixed", inset: 0, zIndex: 99990 }} className="bg-gray-900/80" aria-hidden="true" />
+
+      {/* ✅ ポップアップ外：左右端帯から出現→自然フェードアウト（落下なし・CSS疑似ランダム） */}
+      <div className={`dwfx-emoji-pop ${fxMode}`} aria-hidden="true">
+        {fxMode === "good" && (
+          <>
+            {Array.from({ length: 40 }).map((_, i) => (
+              <span key={i} className={`ep ep${i + 1}`}>
+                <span className="epi">{i % 3 === 0 ? "✨" : "🎉"}</span>
+              </span>
+            ))}
+          </>
+        )}
+        {fxMode === "bad" && (
+          <>
+            {Array.from({ length: 40 }).map((_, i) => (
+              <span key={i} className={`ep ep${i + 1}`}>
+                <span className="epi">{i % 3 === 0 ? "🔥" : "⚠️"}</span>
+              </span>
+            ))}
+          </>
+        )}
+        {fxMode === "neutral" && (
+          <>
+            {Array.from({ length: 40 }).map((_, i) => (
+              <span key={i} className={`ep ep${i + 1}`}>
+                <span className="epi">{i % 3 === 0 ? "💫" : "⭐"}</span>
+              </span>
+            ))}
+          </>
+        )}
+      </div>
+
+
+      {/* ===== モーダル本体 ===== */}
+      <div
+        ref={modalBodyRef}
+        style={{ position: "relative", zIndex: 99995, width: "100%", maxWidth: 800, maxHeight: "96vh" }}
+        className="bg-white w-full max-w-[92vw] md:max-w-[800px] max-h-[96vh] overflow-y-auto rounded-lg shadow-2xl p-2 md:p-4 relative"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* 内側FX */}
+        <div className={`dwfx-inner ${fxMode}`} aria-hidden="true">
+          <div className="dwfx-inner__grad" />
+          <div className="dwfx-inner__spark" />
+          <div className="dwfx-inner__bubble" />
+        </div>
+
         <button
           onClick={() => setIsModalOpen(false)}
-          className="absolute top-4 right-4 z-10 text-gray-500 hover:text-gray-800 transition p-2 rounded-full bg-gray-100 hover:bg-gray-200"
+          className="sticky top-2 ml-auto block text-gray-500 hover:text-gray-800 transition p-2 rounded-full bg-gray-100 hover:bg-gray-200 z-10"
           aria-label="閉じる"
-          title="閉じる"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
 
-        <h3 className="font-extrabold text-indigo-700 text-3xl mb-4 border-b pb-2 flex items-center">
+        <h3 className="font-extrabold text-indigo-700 text-3xl mb-4 border-b pb-2 flex items-center relative z-10">
           <span className="text-4xl mr-2">📱</span> スマートフォン依存度 診断テスト
         </h3>
 
-        {testResult && style ? (
-          <div className={`mt-8 p-6 ${style.bg} border-2 ${style.border} rounded-xl shadow-inner`}>
-            <h4 className={`text-2xl font-extrabold ${style.text} mb-4 flex items-center`}><span className="text-3xl mr-2">{style.icon}</span> 診断結果</h4>
+{testResult && style ? (
+          <div className={`mt-4 p-6 ${style.bg} border-2 ${style.border} rounded-xl shadow-inner relative z-10`}>
+           <div className="relative overflow-hidden rounded-2xl bg-white/90 backdrop-blur-sm border border-indigo-100 shadow-sm p-5 md:p-6 mb-4">
+              {/* 右端の背景（リボン）を残す */}
+              <div className="absolute -right-24 -top-24 h-56 w-56 rotate-12 rounded-full bg-gradient-to-br from-indigo-200/70 via-emerald-200/40 to-amber-200/30" />
 
+              <div className="relative flex items-start justify-between gap-3">
+                <p className="text-[11px] font-extrabold tracking-widest text-indigo-600">CERTIFICATE</p>
+                <div
+                  className={`dw-stamp-blink absolute right-4 top-4 translate-x-1/2 -translate-y-1/2 z-10 grid place-items-center rounded-full border-4 ${stampTheme.base} h-14 w-14 md:h-18 md:w-18 rotate-6 shadow-sm`}
+                  style={stampStyle}
+                >
+                  <span className={`text-[10px] md:text-[11px] font-extrabold ${stampTheme.text} text-center leading-tight px-2`}>{certificate.stamp}</span>
+                </div>
+              </div>
+
+              {/* 💬・判定・おすすめ：CERTIFICATE内に表示 */}
+              <div className="relative mt-4 space-y-3">
+                {comparisonMessage && (
+                  <div className="p-3 bg-white/90 rounded-lg border-l-4 border-indigo-500 shadow-sm">
+                    <p className="font-bold text-indigo-800 flex items-start text-sm"><span className="mr-2 text-lg">💬</span>{comparisonMessage}</p>
+                  </div>
+                )}
+
+                <p className="text-sm font-bold text-gray-700">
+                  判定レベル: <span className={`${style.scoreText} text-xl font-extrabold`}>{testResult.level}</span>
+                </p>
+
+                <div className="p-3 rounded-lg bg-indigo-50 border border-indigo-100">
+                  <p className="text-[11px] font-extrabold text-indigo-700 mb-1">おすすめの行動指針</p>
+                  <p className="text-sm text-gray-800 whitespace-pre-line leading-relaxed">{testResult.recommendation}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-indigo-100 shadow-sm p-4 md:p-5 mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-extrabold text-indigo-700">最近の推移（最新10件）<span className="ml-2 text-xs text-gray-500">※スコアは低いほど良い</span></p>
+                <span className="text-xs text-gray-500 font-bold">⭐=ベスト</span>
+              </div>
+              <div className="h-44">
+                <ResourceChart type="line" data={sparkData} options={sparkOptions} plugins={[scoreBandsPlugin]} chartjsConstructor={chartjsConstructor} isChartJsLoaded={isChartJsLoaded} />
+              </div>
+            </div>
             {!isLoggedIn && (
-              <div className="mb-4 p-4 bg-white rounded-lg border-l-4 border-indigo-500 shadow-sm">
-                <p className="text-sm text-gray-600">
+              <div className="mb-4 p-4 bg-white/95 rounded-lg border-l-4 border-indigo-500 shadow-sm">
+                <p className="text-sm text-gray-700">
                   この結果は表示のみです。<span className="font-bold text-indigo-700">履歴に保存するにはログイン</span>してください。
                 </p>
                 <div className="mt-3">
@@ -1091,55 +2048,37 @@ const AddictionTestModal = React.memo(({
                 </div>
               </div>
             )}
-
-            {comparisonMessage && (
-              <div className="mb-6 p-4 bg-white rounded-lg border-l-4 border-indigo-500 shadow-sm">
-                <p className="font-bold text-indigo-800 flex items-start"><span className="mr-2 text-xl">💬</span>{comparisonMessage}</p>
-              </div>
-            )}
-
-            <p className="text-xl font-bold mb-2">判定レベル: <span className={`${style.scoreText} text-3xl`}>{testResult.level}</span></p>
-            <p className="text-lg font-bold mb-4">合計スコア: <span className={`${style.scoreText} text-2xl`}>{testTotalScore}点</span></p>
-
-            <div className="border-t pt-4 border-gray-300/50">
-              <h5 className={`font-bold ${style.text} mb-2`}>おすすめの行動指針:</h5>
-              <p className="text-gray-800 whitespace-pre-line leading-relaxed">{testResult.recommendation}</p>
-            </div>
-
             <div className="flex items-center gap-3 mt-8">
               <div className="ml-auto flex items-center gap-3">
-                {/* 再診断ボタン（色を元に戻す場合はここだけ変更） */}
-                <button
-                  onClick={resetTest}
-                  className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-base rounded-full shadow-lg transition transform hover:scale-[1.02]"
-                >
+                <button onClick={resetTest} className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-base rounded-full shadow-lg transition transform hover:scale-[1.02]">
                   再診断する
                 </button>
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-8 py-4 bg-white border border-gray-300 text-gray-700 font-extrabold text-base rounded-full shadow-lg hover:bg-gray-50 transition"
-                  title="閉じる"
-                >
+                <button onClick={() => setIsModalOpen(false)} className="px-8 py-4 bg-gray-500 hover:bg-gray-600 text-white font-extrabold text-base rounded-full shadow-lg transition transform hover:scale-[1.02]">
                   閉じる
                 </button>
               </div>
             </div>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-6 relative z-10">
             {testQuestions.map((question: string, index: number) => (
               <div key={index} className="bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200">
                 <p className="font-bold text-gray-800 mb-3">Q{index + 1}. {question}</p>
                 <div className="flex flex-wrap gap-3">
                   {options.map((option) => (
-                    <label key={option.score} className={`flex items-center p-3 rounded-xl border-2 cursor-pointer transition duration-150 ease-in-out text-sm font-semibold ${option.class} ${testAnswers[index] === option.score ? "ring-4 ring-offset-2" : ""}`} onClick={handleOptionClick}>
-                      <input type="radio" name={`question-${index}`} value={option.score} checked={testAnswers[index] === option.score} onChange={() => handleAnswerChange(index, option.score)} className="sr-only" />
+                    <label
+                      key={option.score}
+                      className={`flex items-center p-3 rounded-xl border-2 cursor-pointer transition duration-150 ease-in-out text-sm font-semibold ${option.class} ${(safeAnswers as any)[index] === option.score ? "ring-4 ring-offset-2" : ""}`}
+                      onClick={handleOptionClick}
+                    >
+                      <input type="radio" name={`question-${index}`} value={option.score} checked={(safeAnswers as any)[index] === option.score} onChange={() => handleAnswerChange(index, option.score)} className="sr-only" />
                       <span className="ml-0 text-center">{option.label}</span>
                     </label>
                   ))}
                 </div>
               </div>
             ))}
+
             <div className="flex flex-wrap gap-3 justify-end p-4">
               <button onClick={calculateScore} disabled={!isAllAnswered} className={`px-8 py-3 font-bold rounded-lg transition transform hover:scale-[1.01] shadow-lg ${isAllAnswered ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "bg-gray-300 text-gray-500 cursor-not-allowed"}`}>
                 診断する ({answeredCount} / {testQuestions.length}問回答済み)
@@ -1147,19 +2086,302 @@ const AddictionTestModal = React.memo(({
             </div>
           </div>
         )}
+
+        {/* ===== CSS（通常の <style>：環境差に強い） ===== */}
+        <style>{`
+/* ===== CERTIFICATEスタンプ点滅（状態色はCSS変数 --dw-blink） ===== */
+.dw-stamp-blink::after{
+  content:"";
+  position:absolute;
+  inset:-8px;
+  border-radius:9999px;
+  background: radial-gradient(circle at 50% 50%, var(--dw-blink), transparent 65%);
+  opacity:0;
+  pointer-events:none;
+}
+.dw-stamp-blink{
+  animation: dwStampBlink 1.8s ease-in-out infinite;
+}
+@keyframes dwStampBlink{
+  0%,100%{ box-shadow: 0 0 0 rgba(0,0,0,0); filter: saturate(1); }
+  50%{ box-shadow: 0 0 26px var(--dw-blink); filter: saturate(1.15); }
+}
+.dw-stamp-blink{ will-change: box-shadow, filter; }
+.dw-stamp-blink:hover{ animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce){
+  .dw-stamp-blink{ animation: none !important; }
+  .dw-stamp-blink::after{ display:none; }
+}
+
+          @media (prefers-reduced-motion: reduce){
+            .dwfx-outer *, .dwfx-inner *, .dwfx-emoji-pop *{ animation: none !important; }
+          }
+
+          /* ===== 外側FX ===== */
+          .dwfx-outer{ position:absolute; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
+          .dwfx-outer__grad{ position:absolute; inset:-30%; opacity:.75; filter: blur(1px); animation: dwOuterMove 6.8s ease-in-out infinite; }
+          .dwfx-outer.good .dwfx-outer__grad{ background:
+            radial-gradient(circle at 18% 18%, rgba(59,130,246,.75), transparent 58%),
+            radial-gradient(circle at 82% 26%, rgba(34,197,94,.55), transparent 60%),
+            radial-gradient(circle at 48% 92%, rgba(99,102,241,.55), transparent 60%),
+            linear-gradient(120deg, rgba(2,6,23,.82), rgba(15,23,42,.82)); }
+          .dwfx-outer.neutral .dwfx-outer__grad{ background:
+            radial-gradient(circle at 18% 18%, rgba(99,102,241,.55), transparent 58%),
+            radial-gradient(circle at 82% 26%, rgba(148,163,184,.40), transparent 60%),
+            linear-gradient(120deg, rgba(2,6,23,.88), rgba(15,23,42,.88)); }
+          .dwfx-outer.bad .dwfx-outer__grad{ background:
+            radial-gradient(circle at 20% 18%, rgba(244,63,94,.75), transparent 58%),
+            radial-gradient(circle at 80% 26%, rgba(245,158,11,.65), transparent 60%),
+            radial-gradient(circle at 50% 92%, rgba(251,191,36,.35), transparent 65%),
+            linear-gradient(120deg, rgba(2,6,23,.92), rgba(24,24,27,.92)); }
+
+          .dwfx-outer__noise{ position:absolute; inset:0; opacity:.22; mix-blend-mode: overlay;
+            background-image: radial-gradient(rgba(255,255,255,.25) 1px, transparent 1px);
+            background-size: 16px 16px;
+            animation: dwNoise 1.9s linear infinite;
+          }
+          .dwfx-outer__glow{ position:absolute; inset:-10%; opacity:.25; filter: blur(12px); mix-blend-mode: screen;
+            background: radial-gradient(circle at 50% 50%, rgba(255,255,255,.30), transparent 60%);
+            animation: dwGlow 4.2s ease-in-out infinite;
+          }
+
+          .dwfx-outer__streak{ position:absolute; inset:-40%; opacity:0; mix-blend-mode: screen; }
+          .dwfx-outer.bad .dwfx-outer__streak{ opacity:.42;
+            background: repeating-linear-gradient(115deg,
+              rgba(244,63,94,0) 0 18px,
+              rgba(244,63,94,.18) 18px 26px,
+              rgba(245,158,11,0) 26px 52px);
+            animation: dwStreak 1.15s linear infinite;
+          }
+
+          @keyframes dwOuterMove{ 0%{ transform:translate(0,0) scale(1);} 50%{ transform:translate(22px,-18px) scale(1.04);} 100%{ transform:translate(0,0) scale(1);} }
+          @keyframes dwNoise{ 0%{ transform:translate(0,0);} 50%{ transform:translate(12px,-10px);} 100%{ transform:translate(0,0);} }
+          @keyframes dwGlow{ 0%{ transform:scale(1);} 50%{ transform:scale(1.05);} 100%{ transform:scale(1);} }
+          @keyframes dwStreak{ 0%{ transform:translateX(-7%) translateY(2%);} 100%{ transform:translateX(7%) translateY(-6%);} }
+
+          /* 粒子 */
+          .dwfx-outer__particles{ position:absolute; inset:0; }
+          .dwfx-outer__particles .p{ position:absolute; width:10px; height:10px; border-radius:9999px; opacity:0;
+            background: rgba(255,255,255,.70);
+            box-shadow: 0 0 22px rgba(255,255,255,.25);
+            animation: dwParticle 3.2s ease-in-out infinite;
+          }
+          .dwfx-outer.good .dwfx-outer__particles .p{ background: rgba(191,219,254,.75); }
+          .dwfx-outer.bad .dwfx-outer__particles .p{ background: rgba(251,191,36,.80); box-shadow: 0 0 22px rgba(244,63,94,.28); }
+
+          @keyframes dwParticle{ 0%{ transform:translateY(18px) scale(.8); opacity:0;} 20%{ opacity:.95;} 70%{ transform:translateY(-180px) scale(1.2); opacity:.65;} 100%{ transform:translateY(-300px) scale(.95); opacity:0;} }
+
+          /* 粒子配置（54個：固定で軽量） */
+                    .p1{ left:7%; top:73%; animation-delay:0.25s; }
+          .p2{ left:14%; top:78%; animation-delay:0.50s; }
+          .p3{ left:21%; top:83%; animation-delay:0.75s; }
+          .p4{ left:28%; top:88%; animation-delay:1.00s; }
+          .p5{ left:35%; top:93%; animation-delay:1.25s; }
+          .p6{ left:42%; top:98%; animation-delay:1.50s; }
+          .p7{ left:49%; top:71%; animation-delay:1.75s; }
+          .p8{ left:56%; top:76%; animation-delay:2.00s; }
+          .p9{ left:63%; top:81%; animation-delay:2.25s; }
+          .p10{ left:70%; top:86%; animation-delay:0.00s; }
+          .p11{ left:77%; top:91%; animation-delay:0.25s; }
+          .p12{ left:84%; top:96%; animation-delay:0.50s; }
+          .p13{ left:91%; top:69%; animation-delay:0.75s; }
+          .p14{ left:2%; top:74%; animation-delay:1.00s; }
+          .p15{ left:9%; top:79%; animation-delay:1.25s; }
+          .p16{ left:16%; top:84%; animation-delay:1.50s; }
+          .p17{ left:23%; top:89%; animation-delay:1.75s; }
+          .p18{ left:30%; top:94%; animation-delay:2.00s; }
+          .p19{ left:37%; top:99%; animation-delay:2.25s; }
+          .p20{ left:44%; top:72%; animation-delay:0.00s; }
+          .p21{ left:51%; top:77%; animation-delay:0.25s; }
+          .p22{ left:58%; top:82%; animation-delay:0.50s; }
+          .p23{ left:65%; top:87%; animation-delay:0.75s; }
+          .p24{ left:72%; top:92%; animation-delay:1.00s; }
+          .p25{ left:79%; top:97%; animation-delay:1.25s; }
+          .p26{ left:86%; top:70%; animation-delay:1.50s; }
+          .p27{ left:93%; top:75%; animation-delay:1.75s; }
+          .p28{ left:4%; top:80%; animation-delay:2.00s; }
+          .p29{ left:11%; top:85%; animation-delay:2.25s; }
+          .p30{ left:18%; top:90%; animation-delay:0.00s; }
+          .p31{ left:25%; top:95%; animation-delay:0.25s; }
+          .p32{ left:32%; top:68%; animation-delay:0.50s; }
+          .p33{ left:39%; top:73%; animation-delay:0.75s; }
+          .p34{ left:46%; top:78%; animation-delay:1.00s; }
+          .p35{ left:53%; top:83%; animation-delay:1.25s; }
+          .p36{ left:60%; top:88%; animation-delay:1.50s; }
+          .p37{ left:67%; top:93%; animation-delay:1.75s; }
+          .p38{ left:74%; top:98%; animation-delay:2.00s; }
+          .p39{ left:81%; top:71%; animation-delay:2.25s; }
+          .p40{ left:88%; top:76%; animation-delay:0.00s; }
+          .p41{ left:95%; top:81%; animation-delay:0.25s; }
+          .p42{ left:6%; top:86%; animation-delay:0.50s; }
+          .p43{ left:13%; top:91%; animation-delay:0.75s; }
+          .p44{ left:20%; top:96%; animation-delay:1.00s; }
+          .p45{ left:27%; top:69%; animation-delay:1.25s; }
+          .p46{ left:34%; top:74%; animation-delay:1.50s; }
+          .p47{ left:41%; top:79%; animation-delay:1.75s; }
+          .p48{ left:48%; top:84%; animation-delay:2.00s; }
+          .p49{ left:55%; top:89%; animation-delay:2.25s; }
+          .p50{ left:62%; top:94%; animation-delay:0.00s; }
+          .p51{ left:69%; top:99%; animation-delay:0.25s; }
+          .p52{ left:76%; top:72%; animation-delay:0.50s; }
+          .p53{ left:83%; top:77%; animation-delay:0.75s; }
+          .p54{ left:90%; top:82%; animation-delay:1.00s; }
+/* ===== 内側FX ===== */
+          .dwfx-inner{ position:absolute; inset:0; pointer-events:none; z-index:0; overflow:hidden; border-radius: 12px; }
+          .dwfx-inner__grad{ position:absolute; inset:-25%; opacity:.42; animation: dwInnerMove 6.5s ease-in-out infinite; }
+          .dwfx-inner.good .dwfx-inner__grad{ background:
+            radial-gradient(circle at 18% 20%, rgba(99,102,241,.45), transparent 55%),
+            radial-gradient(circle at 80% 30%, rgba(34,197,94,.28), transparent 60%),
+            linear-gradient(120deg, rgba(255,255,255,.70), rgba(238,242,255,.45)); }
+          .dwfx-inner.neutral .dwfx-inner__grad{ background:
+            radial-gradient(circle at 18% 20%, rgba(99,102,241,.32), transparent 55%),
+            linear-gradient(120deg, rgba(255,255,255,.72), rgba(243,244,246,.45)); }
+          .dwfx-inner.bad .dwfx-inner__grad{ background:
+            radial-gradient(circle at 18% 20%, rgba(244,63,94,.34), transparent 55%),
+            radial-gradient(circle at 82% 28%, rgba(245,158,11,.22), transparent 60%),
+            linear-gradient(120deg, rgba(255,255,255,.72), rgba(249,250,251,.40)); }
+
+          .dwfx-inner__spark{ position:absolute; inset:0; opacity:.40; mix-blend-mode: screen;
+            background-image: radial-gradient(rgba(255,255,255,.65) 1.2px, transparent 1.2px);
+            background-size: 20px 20px;
+            animation: dwSpark 2.8s linear infinite;
+          }
+          .dwfx-inner.bad .dwfx-inner__spark{ opacity:.52;
+            background-image: radial-gradient(rgba(251,191,36,.60) 1.2px, transparent 1.2px);
+          }
+
+          .dwfx-inner__bubble{ position:absolute; inset:0; opacity:.55; mix-blend-mode: overlay;
+            background:
+              radial-gradient(circle at 10% 86%, rgba(255,255,255,.75) 0 16px, transparent 17px),
+              radial-gradient(circle at 28% 92%, rgba(255,255,255,.60) 0 12px, transparent 13px),
+              radial-gradient(circle at 52% 88%, rgba(255,255,255,.68) 0 18px, transparent 19px),
+              radial-gradient(circle at 76% 94%, rgba(255,255,255,.55) 0 10px, transparent 11px),
+              radial-gradient(circle at 92% 82%, rgba(255,255,255,.60) 0 14px, transparent 15px);
+            animation: dwBubbles 3.8s ease-in-out infinite;
+          }
+          .dwfx-inner.bad .dwfx-inner__bubble{ opacity:.45; filter:saturate(1.25);
+            background:
+              radial-gradient(circle at 20% 88%, rgba(251,191,36,.45) 0 16px, transparent 17px),
+              radial-gradient(circle at 78% 90%, rgba(244,63,94,.32) 0 18px, transparent 19px);
+            animation: dwPulse 1.9s ease-in-out infinite;
+          }
+
+          @keyframes dwInnerMove{ 0%{ transform:translate(0,0) scale(1);} 50%{ transform:translate(14px,-12px) scale(1.02);} 100%{ transform:translate(0,0) scale(1);} }
+          @keyframes dwSpark{ 0%{ transform:translate(0,0);} 100%{ transform:translate(20px,-20px);} }
+          @keyframes dwBubbles{ 0%{ transform:translateY(0);} 50%{ transform:translateY(-12px);} 100%{ transform:translateY(0);} }
+          @keyframes dwPulse{ 0%{ opacity:.28;} 50%{ opacity:.60;} 100%{ opacity:.28;} }
+        
+
+/* ===== ポップアップ内：絵文字レイン（上から降る） ===== */
+.dwfx-emoji-rain{ position:absolute; inset:0; z-index:99998; pointer-events:none; overflow:hidden; }
+.dwfx-emoji-rain.neutral{ opacity:.55; }
+.dwfx-emoji-rain.good{ opacity:.9; }
+.dwfx-emoji-rain.bad{ opacity:.9; }
+.dwfx-emoji-rain .er{
+  position:absolute;
+  top:-40px;
+  font-size: 20px;
+  line-height: 1;
+  opacity: 0;
+  filter: drop-shadow(0 10px 14px rgba(0,0,0,.18));
+  animation: dwEmojiFall 2.6s linear infinite;
+}
+.dwfx-emoji-rain.good .er{ filter: drop-shadow(0 12px 16px rgba(16,185,129,.24)); }
+.dwfx-emoji-rain.bad .er{ filter: drop-shadow(0 12px 16px rgba(244,63,94,.26)); }
+
+
+/* ===== ポップアップ外：左右端帯から出現→自然フェードアウト（落下なし） ===== */
+.dwfx-emoji-pop{ position: fixed; inset: 0; z-index: 99993; pointer-events: none; overflow: hidden; }
+.dwfx-emoji-pop .ep{ position: absolute; opacity: 0; animation: dwPopFade var(--dur, 1400ms) ease-out infinite; animation-delay: var(--delay, -0.2s); will-change: opacity, transform; }
+.dwfx-emoji-pop .epi{ display: inline-block; animation: dwDrift var(--dr, 2.4s) ease-in-out infinite, dwTwinkle var(--tw, 1.6s) ease-in-out infinite; filter: drop-shadow(0 10px 14px rgba(0,0,0,.18)); will-change: transform, opacity; }
+.dwfx-emoji-pop.good .epi{ filter: drop-shadow(0 12px 16px rgba(16,185,129,.22)); }
+.dwfx-emoji-pop.bad .epi{ filter: drop-shadow(0 12px 16px rgba(244,63,94,.24)); }
+@keyframes dwPopFade{ 0%{ opacity:0; transform: scale(.92); } 12%{ opacity:1; } 70%{ opacity:.90; transform: scale(1.00);} 100%{ opacity:0; transform: scale(1.06);} }
+@keyframes dwDrift{ 0%{ transform: translateX(0px);} 25%{ transform: translateX(var(--dx1, 10px)); } 50%{ transform: translateX(calc(var(--dx1, 10px) * -1)); } 75%{ transform: translateX(var(--dx2, 6px)); } 100%{ transform: translateX(0px);} }
+@keyframes dwTwinkle{ 0%,100%{ opacity:.78;} 18%{ opacity:1;} 55%{ opacity:.55;} 82%{ opacity:.95;} }
+@media (prefers-reduced-motion: reduce){ .dwfx-emoji-pop *{ animation: none !important; } }
+
+/* ===== 左右端帯のみ：疑似ランダム配置（ep1〜ep40） ===== */
+.ep1  { left:  3.2%; top: 14.0%; --dur: 1580ms; --delay:-0.42s; --tw:1.38s; --dr:2.62s; --dx1:12px; --dx2: 7px; font-size:24px; }
+.ep2  { left: 95.4%; top: 18.5%; --dur: 1320ms; --delay:-1.76s; --tw:2.06s; --dr:2.14s; --dx1: 9px; --dx2:11px; font-size:20px; }
+.ep3  { left:  7.8%; top: 26.2%; --dur: 1760ms; --delay:-0.88s; --tw:1.72s; --dr:3.18s; --dx1:14px; --dx2: 6px; font-size:28px; }
+.ep4  { left: 83.1%; top: 12.8%; --dur: 1200ms; --delay:-2.08s; --tw:1.46s; --dr:2.88s; --dx1: 8px; --dx2:13px; font-size:19px; }
+.ep5  { left: 15.6%; top: 20.1%; --dur: 1410ms; --delay:-1.22s; --tw:2.18s; --dr:2.36s; --dx1:10px; --dx2: 8px; font-size:22px; }
+.ep6  { left: 90.7%; top: 34.4%; --dur: 1640ms; --delay:-0.64s; --tw:1.30s; --dr:3.28s; --dx1:15px; --dx2: 7px; font-size:26px; }
+.ep7  { left:  4.9%; top: 42.0%; --dur: 1290ms; --delay:-1.94s; --tw:1.90s; --dr:2.54s; --dx1: 7px; --dx2:12px; font-size:20px; }
+.ep8  { left: 97.2%; top: 27.6%; --dur: 1850ms; --delay:-0.38s; --tw:2.22s; --dr:2.02s; --dx1:11px; --dx2: 6px; font-size:29px; }
+.ep9  { left: 11.4%; top: 36.8%; --dur: 1500ms; --delay:-1.10s; --tw:1.58s; --dr:3.06s; --dx1:13px; --dx2: 9px; font-size:23px; }
+.ep10 { left: 84.9%; top: 46.7%; --dur: 1180ms; --delay:-2.22s; --tw:1.34s; --dr:2.72s; --dx1: 8px; --dx2:10px; font-size:18px; }
+.ep11 { left:  2.7%; top: 54.9%; --dur: 1670ms; --delay:-0.72s; --tw:2.10s; --dr:2.26s; --dx1:14px; --dx2: 6px; font-size:27px; }
+.ep12 { left: 92.0%; top: 58.1%; --dur: 1380ms; --delay:-1.48s; --tw:1.44s; --dr:3.32s; --dx1:10px; --dx2:13px; font-size:21px; }
+.ep13 { left: 17.3%; top: 63.6%; --dur: 1600ms; --delay:-0.54s; --tw:1.86s; --dr:2.92s; --dx1: 9px; --dx2:11px; font-size:25px; }
+.ep14 { left: 88.6%; top: 66.2%; --dur: 1240ms; --delay:-2.34s; --tw:2.34s; --dr:2.12s; --dx1:12px; --dx2: 7px; font-size:19px; }
+.ep15 { left:  6.1%; top: 72.4%; --dur: 1720ms; --delay:-0.96s; --tw:1.52s; --dr:3.20s; --dx1:15px; --dx2: 8px; font-size:28px; }
+.ep16 { left: 98.0%; top: 74.0%; --dur: 1460ms; --delay:-1.30s; --tw:1.98s; --dr:2.40s; --dx1: 7px; --dx2:12px; font-size:22px; }
+.ep17 { left: 12.9%; top: 80.3%; --dur: 1330ms; --delay:-2.10s; --tw:1.28s; --dr:2.84s; --dx1:10px; --dx2: 6px; font-size:20px; }
+.ep18 { left: 82.4%; top: 83.2%; --dur: 1870ms; --delay:-0.46s; --tw:2.16s; --dr:3.14s; --dx1:13px; --dx2:10px; font-size:30px; }
+.ep19 { left:  9.6%; top: 86.5%; --dur: 1550ms; --delay:-1.06s; --tw:1.64s; --dr:2.52s; --dx1: 8px; --dx2:13px; font-size:23px; }
+.ep20 { left: 94.1%; top: 88.8%; --dur: 1210ms; --delay:-2.28s; --tw:1.40s; --dr:2.98s; --dx1:11px; --dx2: 7px; font-size:18px; }
+.ep21 { left:  3.9%; top: 22.9%; --dur: 1660ms; --delay:-0.60s; --tw:2.26s; --dr:2.18s; --dx1:14px; --dx2: 6px; font-size:26px; }
+.ep22 { left: 87.7%; top: 30.8%; --dur: 1430ms; --delay:-1.62s; --tw:1.54s; --dr:3.36s; --dx1: 9px; --dx2:12px; font-size:21px; }
+.ep23 { left: 16.1%; top: 39.2%; --dur: 1765ms; --delay:-0.84s; --tw:1.92s; --dr:2.44s; --dx1:12px; --dx2: 9px; font-size:28px; }
+.ep24 { left: 99.0%; top: 41.7%; --dur: 1260ms; --delay:-2.14s; --tw:1.36s; --dr:2.78s; --dx1: 7px; --dx2:10px; font-size:19px; }
+.ep25 { left:  5.4%; top: 48.6%; --dur: 1505ms; --delay:-1.18s; --tw:2.12s; --dr:3.08s; --dx1:15px; --dx2: 8px; font-size:24px; }
+.ep26 { left: 84.2%; top: 52.1%; --dur: 1880ms; --delay:-0.32s; --tw:1.60s; --dr:2.30s; --dx1:10px; --dx2:13px; font-size:30px; }
+.ep27 { left: 13.8%; top: 57.4%; --dur: 1340ms; --delay:-1.98s; --tw:1.30s; --dr:2.90s; --dx1: 8px; --dx2: 6px; font-size:20px; }
+.ep28 { left: 96.3%; top: 61.5%; --dur: 1620ms; --delay:-0.70s; --tw:2.40s; --dr:3.22s; --dx1:13px; --dx2: 7px; font-size:26px; }
+.ep29 { left:  2.4%; top: 65.8%; --dur: 1450ms; --delay:-1.36s; --tw:1.72s; --dr:2.58s; --dx1:11px; --dx2:12px; font-size:22px; }
+.ep30 { left: 90.9%; top: 69.1%; --dur: 1215ms; --delay:-2.26s; --tw:1.42s; --dr:3.00s; --dx1: 9px; --dx2: 8px; font-size:18px; }
+.ep31 { left: 10.2%; top: 11.6%; --dur: 1740ms; --delay:-0.94s; --tw:2.08s; --dr:2.12s; --dx1:14px; --dx2: 6px; font-size:28px; }
+.ep32 { left: 82.9%; top: 23.4%; --dur: 1385ms; --delay:-1.56s; --tw:1.50s; --dr:3.38s; --dx1:10px; --dx2:13px; font-size:21px; }
+.ep33 { left: 18.0%; top: 33.0%; --dur: 1605ms; --delay:-0.52s; --tw:1.96s; --dr:2.40s; --dx1:12px; --dx2: 9px; font-size:25px; }
+.ep34 { left: 97.7%; top: 15.2%; --dur: 1245ms; --delay:-2.06s; --tw:1.32s; --dr:2.80s; --dx1: 7px; --dx2:10px; font-size:19px; }
+.ep35 { left:  6.8%; top: 44.1%; --dur: 1520ms; --delay:-1.12s; --tw:2.20s; --dr:3.10s; --dx1:15px; --dx2: 8px; font-size:24px; }
+.ep36 { left: 85.6%; top: 49.3%; --dur: 1860ms; --delay:-0.36s; --tw:1.62s; --dr:2.32s; --dx1:10px; --dx2:13px; font-size:30px; }
+.ep37 { left: 12.1%; top: 60.6%; --dur: 1355ms; --delay:-1.92s; --tw:1.28s; --dr:2.92s; --dx1: 8px; --dx2: 6px; font-size:20px; }
+.ep38 { left: 93.5%; top: 56.0%; --dur: 1635ms; --delay:-0.68s; --tw:2.38s; --dr:3.24s; --dx1:13px; --dx2: 7px; font-size:26px; }
+.ep39 { left:  2.1%; top: 77.8%; --dur: 1470ms; --delay:-1.28s; --tw:1.70s; --dr:2.56s; --dx1:11px; --dx2:12px; font-size:22px; }
+.ep40 { left: 89.2%; top: 81.6%; --dur: 1230ms; --delay:-2.18s; --tw:1.40s; --dr:3.02s; --dx1: 9px; --dx2: 8px; font-size:18px; }
+
+@keyframes dwEmojiFall{
+  0%{ transform: translateY(-20px) rotate(0deg); opacity: 0; }
+  10%{ opacity: 1; }
+  70%{ opacity: .95; }
+  100%{ transform: translateY(620px) rotate(360deg); opacity: 0; }
+}
+
+.er1{ left:5%; animation-delay:0.17s; animation-duration:2.45s; font-size:20px; }
+.er2{ left:10%; animation-delay:0.34s; animation-duration:2.70s; font-size:22px; }
+.er3{ left:15%; animation-delay:0.51s; animation-duration:2.95s; font-size:24px; }
+.er4{ left:20%; animation-delay:0.68s; animation-duration:3.20s; font-size:18px; }
+.er5{ left:25%; animation-delay:0.85s; animation-duration:2.20s; font-size:20px; }
+.er6{ left:30%; animation-delay:1.02s; animation-duration:2.45s; font-size:22px; }
+.er7{ left:35%; animation-delay:1.19s; animation-duration:2.70s; font-size:24px; }
+.er8{ left:40%; animation-delay:1.36s; animation-duration:2.95s; font-size:18px; }
+.er9{ left:45%; animation-delay:1.53s; animation-duration:3.20s; font-size:20px; }
+.er10{ left:50%; animation-delay:1.70s; animation-duration:2.20s; font-size:22px; }
+.er11{ left:55%; animation-delay:1.87s; animation-duration:2.45s; font-size:24px; }
+.er12{ left:60%; animation-delay:2.04s; animation-duration:2.70s; font-size:18px; }
+.er13{ left:65%; animation-delay:0.00s; animation-duration:2.95s; font-size:20px; }
+.er14{ left:70%; animation-delay:0.17s; animation-duration:3.20s; font-size:22px; }
+.er15{ left:75%; animation-delay:0.34s; animation-duration:2.20s; font-size:24px; }
+.er16{ left:80%; animation-delay:0.51s; animation-duration:2.45s; font-size:18px; }
+.er17{ left:85%; animation-delay:0.68s; animation-duration:2.70s; font-size:20px; }
+.er18{ left:90%; animation-delay:0.85s; animation-duration:2.95s; font-size:22px; }
+
+        `}</style>
       </div>
     </div>
   );
-});
+}));
 AddictionTestModal.displayName = "AddictionTestModal";
 
 /* ===============================================
- 7. メインコンテンツ
+ 8. メインコンテンツ
 =============================================== */
-
-/** _agg を必ず持つ型へナローイング（TS18048対策） */
 type Agg = NonNullable<AppStat["_agg"]>;
 type AggAppStat = Omit<AppStat, "_agg"> & { _agg: Agg };
+
 function toAgg(app: AppStat): AggAppStat {
   const tv = Math.max(0, app.totalVotes);
   const agg: Agg = app._agg ?? {
@@ -1175,7 +2397,6 @@ function toAgg(app: AppStat): AggAppStat {
   return { ...app, _agg: { ...agg } };
 }
 
-/** 副作用なしの再計算（不変更新） */
 function recomputeAveragesPure(app: AppStat): AppStat {
   const tv = Math.max(0, app.totalVotes);
   const agg = app._agg ?? {
@@ -1188,7 +2409,6 @@ function recomputeAveragesPure(app: AppStat): AppStat {
       design: app.ratings.design * tv,
     }
   };
-
   const clampedSuccess = Math.min(tv, Math.max(0, agg.successCount));
   const rawRate = tv > 0 ? (clampedSuccess / tv) * 100 : 0;
   const successRate = Math.min(100, Math.max(0, Math.round(rawRate)));
@@ -1201,41 +2421,40 @@ function recomputeAveragesPure(app: AppStat): AppStat {
     continuity: Math.max(0, sums.continuity),
     design: Math.max(0, sums.design),
   };
-  const clamp5 = (v: number) => Math.min(5, Math.max(0, parseFloat(v.toFixed(1))));
 
+  const clamp5 = (v: number) => Math.min(5, Math.max(0, parseFloat(v.toFixed(1))));
   const ratings = tv > 0
     ? {
-        effectiveness: clamp5(safeSums.effectiveness / tv),
-        fun: clamp5(safeSums.fun / tv),
-        ease: clamp5(safeSums.ease / tv),
-        continuity: clamp5(safeSums.continuity / tv),
-        design: clamp5(safeSums.design / tv),
-      }
+      effectiveness: clamp5(safeSums.effectiveness / tv),
+      fun: clamp5(safeSums.fun / tv),
+      ease: clamp5(safeSums.ease / tv),
+      continuity: clamp5(safeSums.continuity / tv),
+      design: clamp5(safeSums.design / tv),
+    }
     : { effectiveness: 0, fun: 0, ease: 0, continuity: 0, design: 0 };
 
-  return {
-    ...app,
-    successRate,
-    ratings,
-    _agg: { successCount: clampedSuccess, ratingSums: safeSums },
-  };
+  return { ...app, successRate, ratings, _agg: { successCount: clampedSuccess, ratingSums: safeSums } };
 }
 
 const MainContent = ({
   currentUser, users, onOpenAuth, onOpenProfile, onLogout, chartjsConstructor, isChartJsLoaded,
-  activeTab, setActiveTab,
+  activeTab, setActiveTab, allHobbies, isHobbyFooterOpen, setIsHobbyFooterOpen,
 }: {
   currentUser: User | null; users: User[]; onOpenAuth: () => void; onOpenProfile: () => void; onLogout: () => void;
   chartjsConstructor: ChartConstructor; isChartJsLoaded: boolean;
-  activeTab: "diagnosis" | "personalize" | "resources" | "knowledge";
-  setActiveTab: (id: "diagnosis" | "personalize" | "resources" | "knowledge") => void;
+  activeTab: "diagnosis" | "personalize" | "resources" | "hobby" | "knowledge";
+  setActiveTab: (id: "diagnosis" | "personalize" | "resources" | "hobby" | "knowledge") => void;
+  allHobbies: HobbyWithType[];
+  isHobbyFooterOpen: boolean; setIsHobbyFooterOpen: (v: boolean | ((x: boolean) => boolean)) => void;
 }) => {
   const [testAnswers, setTestAnswers] = useState<number[]>(initialTestAnswers);
   const [testTotalScore, setTestTotalScore] = useState<number | null>(initialTestScore);
   const [testResult, setTestResult] = useState<{ level: string, recommendation: string } | null>(initialTestResult);
   const [testHistory, setTestHistory] = useState<TestHistoryRecord[]>([]);
+
   const [appStats, setAppStats] = useState<AppStat[]>(initialAppStats);
   const [isAppStatsLoaded, setIsAppStatsLoaded] = useState(false);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [comparisonMessage, setComparisonMessage] = useState<string | null>(null);
   const [historyFilter, setHistoryFilter] = useState<"10" | "all">("10");
@@ -1246,7 +2465,6 @@ const MainContent = ({
   const [userRatings, setUserRatings] = useState<UserRatingsMap>({});
   const [hasLoadedUserData, setHasLoadedUserData] = useState(false);
 
-  /* ロード（ユーザー別）＋未ログイン保留結果の取り込み */
   useEffect(() => {
     const userId = currentUser?.id;
     if (userId) {
@@ -1266,22 +2484,21 @@ const MainContent = ({
       setComparisonMessage(latest?.comparisonMessage ?? null);
       setHasLoadedUserData(true);
 
-      // 直前のゲスト結果があれば履歴へ自動追加
       const pending = loadFromLocalStorage<PendingResult | null>(KEY_PENDING_RESULT, null);
       if (pending && pending.score !== undefined && pending.level && pending.recommendation) {
         const record: TestHistoryRecord = {
           id: Date.now(),
-          date: pending.date || formatDate(new Date()),
+          date: pending.date ?? formatDate(new Date()),
           score: pending.score,
           level: pending.level,
           recommendation: pending.recommendation,
-          comparisonMessage: pending.comparisonMessage || undefined,
+          comparisonMessage: pending.comparisonMessage ?? undefined,
         };
         setTestHistory(prev => [record, ...prev]);
         removeFromLocalStorage(KEY_PENDING_RESULT);
         setTestTotalScore(pending.score);
         setTestResult({ level: pending.level, recommendation: pending.recommendation });
-        setComparisonMessage(pending.comparisonMessage || null);
+        setComparisonMessage(pending.comparisonMessage ?? null);
       }
     } else {
       setTestAnswers(initialTestAnswers);
@@ -1294,7 +2511,6 @@ const MainContent = ({
     }
   }, [currentUser?.id]);
 
-  /* AppStats ロード＆移行 */
   useEffect(() => {
     const loaded = loadFromLocalStorage<AppStat[]>(KEY_APP_STATS, initialAppStats);
     const migrated = loaded.map((app) => {
@@ -1317,7 +2533,6 @@ const MainContent = ({
     setIsAppStatsLoaded(true);
   }, []);
 
-  /* 保存 */
   useEffect(() => { if (currentUser && hasLoadedUserData) saveToLocalStorage(KEY_ANSWERS, testAnswers, currentUser.id); }, [testAnswers, currentUser, hasLoadedUserData]);
   useEffect(() => { if (currentUser && hasLoadedUserData) saveToLocalStorage(KEY_SCORE, testTotalScore, currentUser.id); }, [testTotalScore, currentUser, hasLoadedUserData]);
   useEffect(() => { if (currentUser && hasLoadedUserData) saveToLocalStorage(KEY_RESULT, testResult, currentUser.id); }, [testResult, currentUser, hasLoadedUserData]);
@@ -1325,14 +2540,11 @@ const MainContent = ({
   useEffect(() => { if (isAppStatsLoaded) saveToLocalStorage(KEY_APP_STATS, appStats); }, [appStats, isAppStatsLoaded]);
   useEffect(() => { if (currentUser && hasLoadedUserData) saveToLocalStorage(KEY_USER_RATINGS, userRatings, currentUser.id); }, [userRatings, currentUser, hasLoadedUserData]);
 
-  /* 診断処理（未ログインは保留結果に保存） */
-  const handleAnswerChange = (qIndex: number, score: number) =>
-    setTestAnswers(prev => { const n = [...prev]; n[qIndex] = score; return n; });
-
+  const handleAnswerChange = (qIndex: number, score: number) => setTestAnswers(prev => { const n = [...prev]; (n as any)[qIndex] = score; return n; });
   const handleOptionClick = (e: React.MouseEvent) => e.stopPropagation();
 
   const calculateScore = () => {
-    const total = testAnswers.reduce((sum, s) => sum + (s ?? 0), 0);
+    const total = (testAnswers as any).reduce((sum: any, s: any) => sum + (s ?? 0), 0);
     setTestTotalScore(total);
     const { level, recommendation } = getResultFromScore(total);
     setTestResult({ level, recommendation });
@@ -1366,29 +2578,22 @@ const MainContent = ({
       };
       saveToLocalStorage(KEY_PENDING_RESULT, pending);
     }
+    setIsModalOpen(true);
   };
 
-  const resetTest = () => {
-    setTestAnswers(new Array(testQuestions.length).fill(null));
-    setTestTotalScore(null);
-    setTestResult(null);
-    setComparisonMessage(null);
-  };
+  const resetTest = () => { setTestAnswers(new Array(testQuestions.length).fill(null)); setTestTotalScore(null); setTestResult(null); setComparisonMessage(null); };
 
-  /* 履歴 */
   const handleDeleteHistoryItem = (e: React.MouseEvent, recordId: number) => {
     e.stopPropagation();
     if (!currentUser) { onOpenAuth(); return; }
     if (!confirm("この履歴を削除しますか？")) return;
     setTestHistory(prev => prev.filter(item => item.id !== recordId));
   };
-  const clearHistory = () => {
-    if (!currentUser) { onOpenAuth(); return; }
-    if (confirm("履歴をすべて削除しますか？")) setTestHistory([]);
-  };
+
+  const clearHistory = () => { if (!currentUser) { onOpenAuth(); return; } if (confirm("履歴をすべて削除しますか？")) setTestHistory([]); };
+
   const openHistoryDetail = (record: TestHistoryRecord) => { setSelectedHistoryRecord(record); setIsHistoryDetailOpen(true); };
 
-  /* 投票 */
   const openSurvey = (app: AppStat) => {
     if (!currentUser) { onOpenAuth(); return; }
     setSurveyTargetApp(app);
@@ -1402,32 +2607,31 @@ const MainContent = ({
     setAppStats((prevStats: AppStat[]) =>
       prevStats.map((app: AppStat) => {
         if (app.id !== appId) return app;
-
-        let nextApp = toAgg(app); // AggAppStat
+        let nextApp = toAgg(app);
 
         if (!prevUserRating) {
           nextApp._agg.successCount += isSuccess ? 1 : 0;
           nextApp.totalVotes += 1;
           nextApp._agg.ratingSums.effectiveness += userRatingsInput.effectiveness;
-          nextApp._agg.ratingSums.fun          += userRatingsInput.fun;
-          nextApp._agg.ratingSums.ease         += userRatingsInput.ease;
-          nextApp._agg.ratingSums.continuity   += userRatingsInput.continuity;
-          nextApp._agg.ratingSums.design       += userRatingsInput.design;
+          nextApp._agg.ratingSums.fun += userRatingsInput.fun;
+          nextApp._agg.ratingSums.ease += userRatingsInput.ease;
+          nextApp._agg.ratingSums.continuity += userRatingsInput.continuity;
+          nextApp._agg.ratingSums.design += userRatingsInput.design;
         } else {
           nextApp._agg.successCount += (isSuccess ? 1 : 0) - (prevUserRating.isSuccess ? 1 : 0);
           nextApp._agg.ratingSums.effectiveness += userRatingsInput.effectiveness - prevUserRating.ratings.effectiveness;
-          nextApp._agg.ratingSums.fun          += userRatingsInput.fun          - prevUserRating.ratings.fun;
-          nextApp._agg.ratingSums.ease         += userRatingsInput.ease         - prevUserRating.ratings.ease;
-          nextApp._agg.ratingSums.continuity   += userRatingsInput.continuity   - prevUserRating.ratings.continuity;
-          nextApp._agg.ratingSums.design       += userRatingsInput.design       - prevUserRating.ratings.design;
+          nextApp._agg.ratingSums.fun += userRatingsInput.fun - prevUserRating.ratings.fun;
+          nextApp._agg.ratingSums.ease += userRatingsInput.ease - prevUserRating.ratings.ease;
+          nextApp._agg.ratingSums.continuity += userRatingsInput.continuity - prevUserRating.ratings.continuity;
+          nextApp._agg.ratingSums.design += userRatingsInput.design - prevUserRating.ratings.design;
         }
 
         nextApp._agg.successCount = Math.min(nextApp.totalVotes, Math.max(0, nextApp._agg.successCount));
         nextApp._agg.ratingSums.effectiveness = Math.max(0, nextApp._agg.ratingSums.effectiveness);
-        nextApp._agg.ratingSums.fun          = Math.max(0, nextApp._agg.ratingSums.fun);
-        nextApp._agg.ratingSums.ease         = Math.max(0, nextApp._agg.ratingSums.ease);
-        nextApp._agg.ratingSums.continuity   = Math.max(0, nextApp._agg.ratingSums.continuity);
-        nextApp._agg.ratingSums.design       = Math.max(0, nextApp._agg.ratingSums.design);
+        nextApp._agg.ratingSums.fun = Math.max(0, nextApp._agg.ratingSums.fun);
+        nextApp._agg.ratingSums.ease = Math.max(0, nextApp._agg.ratingSums.ease);
+        nextApp._agg.ratingSums.continuity = Math.max(0, nextApp._agg.ratingSums.continuity);
+        nextApp._agg.ratingSums.design = Math.max(0, nextApp._agg.ratingSums.design);
 
         return recomputeAveragesPure(nextApp);
       })
@@ -1450,23 +2654,22 @@ const MainContent = ({
     setAppStats((prevStats: AppStat[]) =>
       prevStats.map((app: AppStat) => {
         if (app.id !== appId) return app;
-
-        let nextApp = toAgg(app); // AggAppStat
+        let nextApp = toAgg(app);
 
         nextApp.totalVotes = Math.max(0, nextApp.totalVotes - 1);
         nextApp._agg.successCount -= prevUserRating.isSuccess ? 1 : 0;
         nextApp._agg.ratingSums.effectiveness -= prevUserRating.ratings.effectiveness;
-        nextApp._agg.ratingSums.fun          -= prevUserRating.ratings.fun;
-        nextApp._agg.ratingSums.ease         -= prevUserRating.ratings.ease;
-        nextApp._agg.ratingSums.continuity   -= prevUserRating.ratings.continuity;
-        nextApp._agg.ratingSums.design       -= prevUserRating.ratings.design;
+        nextApp._agg.ratingSums.fun -= prevUserRating.ratings.fun;
+        nextApp._agg.ratingSums.ease -= prevUserRating.ratings.ease;
+        nextApp._agg.ratingSums.continuity -= prevUserRating.ratings.continuity;
+        nextApp._agg.ratingSums.design -= prevUserRating.ratings.design;
 
         nextApp._agg.successCount = Math.min(nextApp.totalVotes, Math.max(0, nextApp._agg.successCount));
         nextApp._agg.ratingSums.effectiveness = Math.max(0, nextApp._agg.ratingSums.effectiveness);
-        nextApp._agg.ratingSums.fun          = Math.max(0, nextApp._agg.ratingSums.fun);
-        nextApp._agg.ratingSums.ease         = Math.max(0, nextApp._agg.ratingSums.ease);
-        nextApp._agg.ratingSums.continuity   = Math.max(0, nextApp._agg.ratingSums.continuity);
-        nextApp._agg.ratingSums.design       = Math.max(0, nextApp._agg.ratingSums.design);
+        nextApp._agg.ratingSums.fun = Math.max(0, nextApp._agg.ratingSums.fun);
+        nextApp._agg.ratingSums.ease = Math.max(0, nextApp._agg.ratingSums.ease);
+        nextApp._agg.ratingSums.continuity = Math.max(0, nextApp._agg.ratingSums.continuity);
+        nextApp._agg.ratingSums.design = Math.max(0, nextApp._agg.ratingSums.design);
 
         return recomputeAveragesPure(nextApp);
       })
@@ -1477,9 +2680,9 @@ const MainContent = ({
     alert("あなたの評価を削除しました。グラフを更新しました。");
   };
 
-  /* 画面レンダリング */
   const renderContent = () => {
     const displayHistory = historyFilter === "10" ? testHistory.slice(0, 10) : testHistory;
+
     switch (activeTab) {
       case "diagnosis":
         return (
@@ -1513,7 +2716,11 @@ const MainContent = ({
               ) : (
                 <div className="space-y-3">
                   {displayHistory.map((record: TestHistoryRecord) => (
-                    <div key={record.id} onClick={() => openHistoryDetail(record)} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm cursor-pointer hover:bg-indigo-50 transition border-l-4 hover:border-l-indigo-500 group">
+                    <div
+                      key={record.id}
+                      onClick={() => openHistoryDetail(record)}
+                      className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm cursor-pointer hover:bg-indigo-50 transition border-l-4 hover:border-l-indigo-500 group"
+                    >
                       <div className="font-semibold text-gray-600 pl-1">{record.date}</div>
                       <div className="flex items-center space-x-3">
                         <div className="text-gray-500 hidden sm:block">スコア: <span className="font-bold text-gray-800">{record.score}</span></div>
@@ -1545,19 +2752,30 @@ const MainContent = ({
         );
 
       case "personalize":
-        return <PersonalizeSection currentUser={currentUser} appStats={appStats} chartjsConstructor={chartjsConstructor} isChartJsLoaded={isChartJsLoaded} onOpenSurvey={openSurvey} />;
+        return (
+          <PersonalizeSection
+            currentUser={currentUser}
+            appStats={appStats}
+            chartjsConstructor={chartjsConstructor}
+            isChartJsLoaded={isChartJsLoaded}
+            onOpenSurvey={openSurvey}
+          />
+        );
 
       case "resources":
         return (
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-4xl mx-auto relative">
             <h2 className="text-2xl font-bold text-gray-700 mb-6 flex items-center"><span className="mr-2">📚</span> お役立ちリソース & ユーザー評価</h2>
             <ResourceSection appStats={appStats} chartjsConstructor={chartjsConstructor} isChartJsLoaded={isChartJsLoaded} onOpenSurvey={openSurvey} />
           </div>
         );
 
+      case "hobby":
+        return <HobbySection currentUser={currentUser} onGoPersonalize={() => setActiveTab("personalize")} />;
+
       case "knowledge":
         return (
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-4xl mx-auto relative">
             <h2 className="text-2xl font-bold text-gray-700 mb-6 flex items-center"><span className="mr-2">🧠</span> 脳科学・知識・相談</h2>
             <KnowledgeSection />
           </div>
@@ -1603,17 +2821,18 @@ const MainContent = ({
 
       {/* フッター ナビ */}
       <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-lg z-40">
-        <div className="max-w-5xl mx-auto flex justify-around items-center">
+        <div className="max-w-5xl mx-auto flex items-center justify-around">
           {[
-            { id: "diagnosis", label: "診断", icon: "\uD83E\uDE7A" },
-            { id: "personalize", label: "タイプ診断", icon: "\uD83D\uDD0D" },
-            { id: "resources", label: "ガイド", icon: "\uD83D\uDCDA" },
-            { id: "knowledge", label: "知識", icon: "\uD83E\uDDE0" }
+            { id: "diagnosis", label: "依存度", icon: "🩺" },
+            { id: "personalize", label: "タイプ", icon: "🔍" },
+            { id: "resources", label: "アプリ", icon: "📚" },
+            { id: "hobby", label: "趣味", icon: "🧶" },
+            { id: "knowledge", label: "知識", icon: "🧠" },
           ].map((tab) => (
             <button
               key={tab.id as any}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex flex-col items-center justify-center w-full py-3 transition ${activeTab === tab.id ? "text-indigo-600 bg-indigo-50" : "text-gray-400 hover:text-gray-600"}`}
+              onClick={() => { setActiveTab(tab.id as any); setIsHobbyFooterOpen(false); }}
+              className={`flex flex-col items-center justify-center w-full py-3 transition ${activeTab === tab.id ? "text-indigo-600 bg-indigo-50" : "text-gray-500 hover:text-gray-800"}`}
             >
               <span className="text-2xl mb-1">{tab.icon}</span>
               <span className="text-xs font-bold">{tab.label}</span>
@@ -1637,12 +2856,17 @@ const MainContent = ({
         comparisonMessage={comparisonMessage}
         isLoggedIn={!!currentUser}
         onLoginForHistory={onOpenAuth}
+        chartjsConstructor={chartjsConstructor}
+        isChartJsLoaded={isChartJsLoaded}
+        testHistory={testHistory}
       />
+
       <HistoryDetailModal
         isOpen={isHistoryDetailOpen}
         onClose={() => setIsHistoryDetailOpen(false)}
         record={selectedHistoryRecord}
       />
+
       <SurveyModal
         isOpen={isSurveyOpen}
         onClose={() => setIsSurveyOpen(false)}
@@ -1656,7 +2880,7 @@ const MainContent = ({
 };
 
 /* ===============================================
- 8. 管理者画面（admin / admin のみ遷移）
+ 9. 管理者画面（admin / admin）
 =============================================== */
 const AdminPanel = ({
   users, onClose, onDeleteUserDeep, onResetAllRatings, onClearAllUserData,
@@ -1673,6 +2897,7 @@ const AdminPanel = ({
 }) => {
   const [isDemoOpen, setIsDemoOpen] = useState(false);
   const [demoMode, setDemoMode] = useState<"ratings" | "userData">("ratings");
+
   const openRatingsDemo = () => { setDemoMode("ratings"); setIsDemoOpen(true); };
   const openUserDataDemo = () => { setDemoMode("userData"); setIsDemoOpen(true); };
 
@@ -1723,26 +2948,16 @@ const AdminPanel = ({
         mode={demoMode}
         users={users}
         currentAppStats={appStats}
-        onExecute={() => {
-          if (demoMode === "ratings") { onResetAllRatings(); }
-          else { onClearAllUserData(); }
-          setIsDemoOpen(false);
-        }}
-        onApplyDemo={() => {
-          onApplyDemoStats();
-          alert("デモデータを適用しました。画面上のグラフやカードで見え方を確認できます。");
-        }}
-        onRestore={() => {
-          onResetAllRatings();
-          alert("評価データを完全に0件に初期化しました。");
-        }}
+        onExecute={() => { if (demoMode === "ratings") { onResetAllRatings(); } else { onClearAllUserData(); } setIsDemoOpen(false); }}
+        onApplyDemo={() => { onApplyDemoStats(); alert("デモデータを適用しました。画面上のグラフやカードで見え方を確認できます。"); }}
+        onRestore={() => { onResetAllRatings(); alert("評価データを完全に0件に初期化しました。"); }}
       />
     </div>
   );
 };
 
 /* ===============================================
- 9. ルートコンポーネント（タブ別スクロール位置の保存・復元＋ログイン/ログアウト時トップ表示）
+ 10. ルートコンポーネント
 =============================================== */
 const DigitalWellbeingApp: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -1754,9 +2969,10 @@ const DigitalWellbeingApp: React.FC = () => {
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [appStats, setAppStats] = useState<AppStat[]>(initialAppStats);
   const chartjsConstructorRef = useRef<ChartConstructor | null>(null);
-  const [activeTab, setActiveTab] = useState<"diagnosis" | "personalize" | "resources" | "knowledge">("diagnosis");
 
-  /** Chart.js 読み込み */
+  const [activeTab, setActiveTab] = useState<"diagnosis" | "personalize" | "resources" | "hobby" | "knowledge">("diagnosis");
+  const [isHobbyFooterOpen, setIsHobbyFooterOpen] = useState(false); // 互換のため残置
+
   useEffect(() => {
     if (isChartJsLoaded) return;
     const cdnUrl = "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js";
@@ -1774,7 +2990,6 @@ const DigitalWellbeingApp: React.FC = () => {
     return () => { document.head.removeChild(script); };
   }, [isChartJsLoaded]);
 
-  /** 初期ロード */
   useEffect(() => {
     const loadedUsersRaw = loadFromLocalStorage<any[]>(KEY_USERS, []);
     const migratedUsers: User[] = loadedUsersRaw.map((u: any) => ({
@@ -1800,7 +3015,6 @@ const DigitalWellbeingApp: React.FC = () => {
     setIsAppLoading(false);
   }, []);
 
-  /** 二重ガード：last user 復元 */
   useEffect(() => {
     if (isAppLoading) return;
     if (currentUser) return;
@@ -1810,12 +3024,10 @@ const DigitalWellbeingApp: React.FC = () => {
     if (u) setCurrentUser(u);
   }, [isAppLoading, currentUser, users]);
 
-  /** 保存 */
   useEffect(() => { saveToLocalStorage(KEY_ACTIVE_TAB, activeTab); }, [activeTab]);
   useEffect(() => { saveToLocalStorage(KEY_USERS, users); }, [users]);
   useEffect(() => { saveToLocalStorage(KEY_APP_STATS, appStats); }, [appStats]);
 
-  /* タブ別スクロール位置の保存・復元 */
   const scrollSaveTimer = useRef<number | null>(null);
   const getScrollKey = (tab: string) => `${SCROLL_KEY_PREFIX}${tab}`;
 
@@ -1835,50 +3047,49 @@ const DigitalWellbeingApp: React.FC = () => {
   }, [activeTab]);
 
   useEffect(() => {
-    requestAnimationFrame(() => {
-      setTimeout(() => { window.scrollTo(0, 0); }, 0);
-    });
+    requestAnimationFrame(() => { setTimeout(() => { window.scrollTo(0, 0); }, 0); });
   }, [activeTab]);
 
   useEffect(() => {
     if (isAppLoading) return;
     const savedY = loadFromLocalStorage<number>(getScrollKey(activeTab), 0);
-    requestAnimationFrame(() => {
-      setTimeout(() => { window.scrollTo(0, savedY); }, 0);
-    });
+    requestAnimationFrame(() => { setTimeout(() => { window.scrollTo(0, savedY); }, 0); });
   }, [isAppLoading]);
 
   const resetAllTabScrollPositions = () => {
-    (["diagnosis", "personalize", "resources", "knowledge"] as const).forEach(tab =>
+    (["diagnosis", "personalize", "resources", "hobby", "knowledge"] as const).forEach(tab =>
       saveToLocalStorage(getScrollKey(tab), 0)
     );
   };
 
-  /** 認証ハンドラ */
   const handleRegister = (username: string, password: string, icon: string): boolean => {
     const dup = users.some(u => u.name === username);
-    if (dup) {
-      alert("そのユーザー名は既に使用されています。別の名前を入力してください。");
-      return false;
-    }
+    if (dup) { alert("そのユーザー名は既に使用されています。別の名前を入力してください。"); return false; }
+
     const newUser: User = { id: Date.now().toString(), name: username, password, icon };
     const nextUsers = [...users, newUser];
     setUsers(nextUsers);
     saveToLocalStorage(KEY_USERS, nextUsers);
+
     setCurrentUser(newUser);
     saveToLocalStorage(KEY_LAST_USER_ID, newUser.id);
+
     resetAllTabScrollPositions();
     requestAnimationFrame(() => { setTimeout(() => window.scrollTo(0, 0), 0); });
+
     return true;
   };
 
   const handleLogin = (username: string, password: string): boolean => {
     const user = users.find(u => u.name === username && u.password === password);
     if (!user) { return false; }
+
     setCurrentUser(user);
     saveToLocalStorage(KEY_LAST_USER_ID, user.id);
+
     resetAllTabScrollPositions();
     requestAnimationFrame(() => { setTimeout(() => window.scrollTo(0, 0), 0); });
+
     return true;
   };
 
@@ -1888,12 +3099,12 @@ const DigitalWellbeingApp: React.FC = () => {
     setCurrentUser(null);
     setIsAdminMode(false);
     setActiveTab("diagnosis");
+    setIsHobbyFooterOpen(false);
     removeFromLocalStorage(KEY_LAST_USER_ID);
     resetAllTabScrollPositions();
     requestAnimationFrame(() => { setTimeout(() => window.scrollTo(0, 0), 0); });
   };
 
-  /** アカウント更新 */
   const updateCurrentUser = (nextName: string, nextPassword: string, nextIcon: string) => {
     if (!currentUser) return;
     const nextUsers = users.map(u => u.id === currentUser.id ? { ...u, name: nextName, password: nextPassword, icon: nextIcon } : u);
@@ -1902,20 +3113,25 @@ const DigitalWellbeingApp: React.FC = () => {
     setCurrentUser(prev => prev ? { ...prev, name: nextName, password: nextPassword, icon: nextIcon } : prev);
   };
 
-  /** 管理者：ユーザー完全削除 */
   const onDeleteUserDeep = (userId: string) => {
     const nextUsers = users.filter(u => u.id !== userId);
     setUsers(nextUsers);
     saveToLocalStorage(KEY_USERS, nextUsers);
+
     const lastId = loadFromLocalStorage<string | null>(KEY_LAST_USER_ID, null);
     if (lastId === userId) { removeFromLocalStorage(KEY_LAST_USER_ID); }
-    if (currentUser && currentUser.id === userId) { setCurrentUser(null); setActiveTab("diagnosis"); }
+
+    if (currentUser && currentUser.id === userId) {
+      setCurrentUser(null);
+      setActiveTab("diagnosis");
+      setIsHobbyFooterOpen(false);
+    }
+
     [KEY_ANSWERS, KEY_SCORE, KEY_RESULT, KEY_HISTORY, KEY_TYPE_RESULT, KEY_ACTIVE_TAB, KEY_USER_RATINGS].forEach((k) =>
       removeFromLocalStorage(k, userId)
     );
   };
 
-  /** 本人アカウント削除：完全削除 -> 自動ログアウト -> 診断タブへ */
   const handleDeleteOwnAccount = () => {
     if (!currentUser) return;
     const userId = currentUser.id;
@@ -1923,12 +3139,12 @@ const DigitalWellbeingApp: React.FC = () => {
     setCurrentUser(null);
     setIsAdminMode(false);
     setActiveTab("diagnosis");
+    setIsHobbyFooterOpen(false);
     removeFromLocalStorage(KEY_LAST_USER_ID);
     resetAllTabScrollPositions();
     requestAnimationFrame(() => { setTimeout(() => window.scrollTo(0, 0), 0); });
   };
 
-  /** 管理者：評価データ完全初期化（0件へ） */
   const onResetAllRatings = () => {
     const emptyStats = initialAppStats.map((app) => ({
       ...app,
@@ -1938,14 +3154,13 @@ const DigitalWellbeingApp: React.FC = () => {
       _agg: { successCount: 0, ratingSums: { effectiveness: 0, fun: 0, ease: 0, continuity: 0, design: 0 } },
     }));
     setAppStats(emptyStats);
-    users.forEach(u => { removeFromLocalStorage(KEY_USER_RATINGS, u.id); });
+    users.forEach((u: User) => { removeFromLocalStorage(KEY_USER_RATINGS, u.id); });
     saveToLocalStorage(KEY_APP_STATS, emptyStats);
     alert("評価データを空の状態（0件）に初期化しました。");
   };
 
-  /** 管理者：全ユーザー診断関連データ削除 */
   const onClearAllUserData = () => {
-    users.forEach((u) => {
+    users.forEach((u: User) => {
       [KEY_ANSWERS, KEY_SCORE, KEY_RESULT, KEY_HISTORY, KEY_TYPE_RESULT, KEY_ACTIVE_TAB].forEach((k) =>
         removeFromLocalStorage(k, u.id)
       );
@@ -1953,18 +3168,20 @@ const DigitalWellbeingApp: React.FC = () => {
     alert("全ユーザーの診断関連データを削除しました。");
   };
 
-  /** 管理者：デモ値適用（バックアップは保持） */
   const applyDemoStats = () => {
     const hasBackup = loadFromLocalStorage<AppStat[] | null>(KEY_APP_STATS_BACKUP, null);
     if (!hasBackup) saveToLocalStorage(KEY_APP_STATS_BACKUP, appStats);
+
     const rand = (min: number, max: number) => Math.round(min + Math.random() * (max - min));
     const avg = () => parseFloat((3 + Math.random() * 2).toFixed(1));
+
     const demo = appStats.map(app => {
       const cfg = app.category === "gamification"
         ? { rate: [65, 90], votes: [500, 2000] }
         : app.category === "lock"
         ? { rate: [70, 95], votes: [600, 2500] }
         : { rate: [75, 90], votes: [800, 3000] };
+
       return {
         ...app,
         successRate: rand(cfg.rate[0], cfg.rate[1]),
@@ -1972,22 +3189,29 @@ const DigitalWellbeingApp: React.FC = () => {
         ratings: { effectiveness: avg(), fun: avg(), ease: avg(), continuity: avg(), design: avg() },
       };
     });
+
     setAppStats(demo);
     saveToLocalStorage(KEY_APP_STATS, demo);
   };
 
   const restoreFromBackup = () => {
     const backup = loadFromLocalStorage<AppStat[] | null>(KEY_APP_STATS_BACKUP, null);
-    if (!backup) {
-      alert("バックアップが見つかりません。デモ適用前の状態である可能性があります。");
-      return;
-    }
+    if (!backup) { alert("バックアップが見つかりません。デモ適用前の状態である可能性があります。"); return; }
     setAppStats(backup);
     saveToLocalStorage(KEY_APP_STATS, backup);
     removeFromLocalStorage(KEY_APP_STATS_BACKUP);
   };
 
-  // ★ ここが今回の修正：全画面固定オーバーレイで Loading を中央表示
+  const allHobbies: HobbyWithType[] = React.useMemo(() => {
+    const list: HobbyWithType[] = [];
+    Object.values(ADDICTION_TYPES).forEach(t => {
+      (t.recommendedHobbies ?? []).forEach(h => {
+        list.push({ ...h, typeId: t.id, typeName: t.name, typeIcon: t.icon });
+      });
+    });
+    return list;
+  }, []);
+
   if (isAppLoading) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-50">
@@ -2025,8 +3249,11 @@ const DigitalWellbeingApp: React.FC = () => {
         isChartJsLoaded={isChartJsLoaded}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        allHobbies={allHobbies}
+        isHobbyFooterOpen={isHobbyFooterOpen}
+        setIsHobbyFooterOpen={setIsHobbyFooterOpen}
       />
-      {/* 認証モーダル */}
+
       <UnifiedAuthModal
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
@@ -2035,7 +3262,7 @@ const DigitalWellbeingApp: React.FC = () => {
         onAdminLogin={() => setIsAdminMode(true)}
         onSuccess={() => { setActiveTab("diagnosis"); }}
       />
-      {/* プロフィール設定モーダル（アカウント削除対応） */}
+
       {currentUser && (
         <ProfileModal
           isOpen={isProfileOpen}
