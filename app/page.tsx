@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 
@@ -1593,18 +1592,20 @@ const AddictionTestModal = React.memo((({
   useBodyScrollLock(!!isOpen);
   const modalBodyRef = useRef<HTMLDivElement>(null);
 
-  // ✅ 結果表示に切り替わったらスクロールを最上部へ
+  // ✅ モーダルを開いたとき／結果⇄質問の切替（再診断含む）で最上部へ
   useEffect(() => {
     if (!isOpen) return;
-    if (!testResult) return;
     requestAnimationFrame(() => {
+      const el = modalBodyRef.current;
+      if (!el) return;
       try {
-        modalBodyRef.current?.scrollTo({ top: 0, behavior: "auto" });
+        el.scrollTo({ top: 0, behavior: "auto" });
       } catch {
-        if (modalBodyRef.current) (modalBodyRef.current as any).scrollTop = 0;
+        (el as any).scrollTop = 0;
       }
     });
   }, [isOpen, testResult?.level, testTotalScore]);
+
   // ★ベスト（●と同じサイズ感）：キャンバスに★を描画して pointStyle に使用
   const bestPointStyle = React.useMemo(() => {
     if (typeof document === "undefined") return "star" as any;
