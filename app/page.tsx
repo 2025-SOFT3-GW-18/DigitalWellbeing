@@ -2101,8 +2101,8 @@ const sparkData = {
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-bold text-gray-700">
                         スコア{' '}
-                        <span className={`text-lg font-extrabold ${style?.scoreText ?? "text-gray-800"} dw-text-blink`} style={stampStyle}>{s ?? "—"}</span>
-                        <span className="text-gray-400"> / {MAX_SCORE}</span>
+                        <span className={`text-xl font-extrabold ${style?.scoreText ?? "text-gray-800"} dw-text-blink`} style={stampStyle}>{s ?? "—"}</span>
+                        <span className="text-xl text-gray-40"> / {MAX_SCORE}</span>
                       </p>
                     </div>
 
