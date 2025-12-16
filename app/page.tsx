@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 
@@ -19,14 +20,12 @@ interface TestHistoryRecord {
   score: number;
   level: string;
   recommendation: string;
-  comparisonMessage?: string;
 }
 interface PendingResult {
   date: string;
   score: number;
   level: string;
   recommendation: string;
-  comparisonMessage?: string;
 }
 
 type HobbyCost = "free" | "low" | "mid" | "high";
@@ -113,25 +112,6 @@ const testQuestions = [
   "家族や友人から、スマホの使いすぎについて指摘されたことがある。",
   "ベッドに入ってからも長時間スマホを見てしまい、寝つきが悪くなる。",
   "重要な用事がないのに、気がつくとスマホを操作している時間が長い。",
-];
-
-const IMPROVEMENT_MESSAGES = [
-  "素晴らしい進歩です！前回よりスコアが改善しました。🌟",
-  "おめでとうございます！意識の変化が結果に表れています。😊",
-  "良い傾向です！少しずつスマホとの距離感が適正になってきています。👍",
-  "ナイスコントロール！時間を味方につけていますね。🌈",
-  "前回よりも依存度が下がっています。リアルの時間を大切に！✨",
-];
-const WORSENING_MESSAGES = [
-  "前回よりスコアが上がってしまいました。深呼吸しましょう。🌳",
-  "注意信号です。知らず知らずのうちに利用時間が増えていませんか？☕",
-  "疲れが溜まっているかもしれません。目を閉じてリラックスしましょう。😌",
-  "油断は禁物です。物理的にスマホを遠ざける工夫をしてみましょう。🔕",
-  "リフレッシュが必要です！少しの間、デジタル機器から離れましょう。🌳",
-];
-const SAME_SCORE_MESSAGES = [
-  "前回と同じスコアです。現状を維持できていますね。⚖️",
-  "変化はありません。油断すると増えてしまうので注意です。👀",
 ];
 
 const ADDICTION_TYPES: Record<AddictionTypeId, AddictionType> = {
@@ -412,11 +392,39 @@ const ResourceChart = ({ type, data, options, plugins, chartjsConstructor, isCha
   }
   return (
     <div className="relative w-full h-full flex justify-center">
-      <canvas ref={canvasRef} />
+      <canvas ref={canvasRef} className="w-full h-full" />
     </div>
   );
 };
 
+
+
+// ===== Chart.js: ドーナツ中央テキスト（円の中心に直接描画してズレを防止） =====
+const DoughnutCenterTextPlugin = {
+  id: "centerText",
+  afterDraw(chart: any) {
+    try {
+      const meta = chart.getDatasetMeta?.(0);
+      const arc = meta?.data?.[0];
+      if (!arc) return;
+      const ctx = chart.ctx;
+      const pluginOpts = chart?.options?.plugins?.centerText ?? {};
+      const text = pluginOpts.text ?? "";
+      if (!text) return;
+      const color = pluginOpts.color ?? "#16a34a";
+      const font = pluginOpts.font ?? "800 12px system-ui, -apple-system, Segoe UI, sans-serif";
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.font = font;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(String(text), arc.x, arc.y);
+      ctx.restore();
+    } catch {
+      // noop
+    }
+  },
+};
 const IconPicker = ({ value, onChange, heightClass }: { value: string; onChange: (icon: string) => void; heightClass?: string; }) => (
   <div className={`w-full overflow-x-hidden overflow-y-auto ${heightClass ?? "max-h-40"} p-1 rounded-lg bg-white border border-gray-200`}>
     <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(40px,1fr))]">
@@ -917,7 +925,15 @@ const AdminActionDemoModal = ({
 /* --- アプリカード／リソースセクション --- */
 const AppCard = ({ app, chartjsConstructor, isChartJsLoaded, onOpenSurvey }: any) => {
   const pieData = { labels: ["成功", "失敗"], datasets: [{ data: [app.successRate, 100 - app.successRate], backgroundColor: ["#4ade80", "#e5e7eb"], borderWidth: 0 }] };
-  const pieOptions = { plugins: { legend: { display: false }, tooltip: { enabled: false } }, maintainAspectRatio: false };
+  const pieOptions = {
+    plugins: {
+      legend: { display: false },
+      tooltip: { enabled: false },
+      // ✅ 中央表示（Chart.jsの中心に描画）
+      centerText: { text: `${app.successRate}%`, color: "#16a34a", font: "800 12px system-ui, -apple-system, Segoe UI, sans-serif" },
+    },
+    maintainAspectRatio: false,
+  };
   const radarData = {
     labels: ["効果", "楽しさ", "手軽さ", "継続性", "デザイン"],
     datasets: [{ label: "評価", data: [app.ratings.effectiveness, app.ratings.fun, app.ratings.ease, app.ratings.continuity, app.ratings.design], backgroundColor: "rgba(99, 102, 241, 0.2)", borderColor: "rgba(99, 102, 241, 1)", borderWidth: 1, pointBackgroundColor: "rgba(99, 102, 241, 1)", pointRadius: 1 }]
@@ -947,8 +963,7 @@ const AppCard = ({ app, chartjsConstructor, isChartJsLoaded, onOpenSurvey }: any
         <div className="w-2/5 relative flex flex-col items-center justify-center">
           <p className="text-[10px] text-gray-400 font-bold mb-1">目標達成率</p>
           <div className="relative w-full flex-1 min-h-0">
-            <ResourceChart type="doughnut" data={pieData} options={pieOptions} chartjsConstructor={chartjsConstructor} isChartJsLoaded={isChartJsLoaded} />
-            <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-green-600">{app.successRate}%</div>
+            <ResourceChart type="doughnut" data={pieData} options={pieOptions} plugins={[DoughnutCenterTextPlugin]} chartjsConstructor={chartjsConstructor} isChartJsLoaded={isChartJsLoaded} />
           </div>
         </div>
         <div className="w-3/5 relative flex flex-col items-center">
@@ -1048,7 +1063,6 @@ const HOBBY_COST_COLOR: Record<HobbyCost, string> = {
   mid: "bg-yellow-50 text-yellow-800 border-yellow-200",
   high: "bg-red-50 text-red-800 border-red-200",
 };
-
 
 // 趣味アイコン（未指定の場合のフォールバック）
 const HOBBY_ICON_MAP: Record<string, string> = {
@@ -1560,11 +1574,7 @@ const HistoryDetailModal = ({ isOpen, onClose, record }: { isOpen: boolean; onCl
             <p className="text-gray-800 whitespace-pre-line leading-relaxed">{record.recommendation}</p>
           </div>
 
-          {record.comparisonMessage && (
-            <div className="mt-4 p-4 bg-white rounded-lg border-l-4 border-indigo-500 shadow-sm">
-              <p className="font-bold text-indigo-800 flex items-start"><span className="mr-2 text-xl">💬</span>{record.comparisonMessage}</p>
-            </div>
-          )}
+          
         </div>
       </div>
     </div>
@@ -1573,18 +1583,17 @@ const HistoryDetailModal = ({ isOpen, onClose, record }: { isOpen: boolean; onCl
 
 /* --- 診断テストモーダル --- */
 
-
 /* --- 診断テストモーダル（派手FX/ good・bad切替 / 外側黒背景もFX / 結果は上から） --- */
 const AddictionTestModal = React.memo((({
   isOpen, setIsModalOpen, testQuestions, testAnswers, handleAnswerChange, calculateScore,
-  resetTest, testResult, testTotalScore, handleOptionClick, comparisonMessage, isLoggedIn, onLoginForHistory,
+  resetTest, testResult, testTotalScore, handleOptionClick, isLoggedIn, onLoginForHistory,
   chartjsConstructor, isChartJsLoaded, testHistory,
 }: {
   isOpen: boolean; setIsModalOpen: (v: boolean) => void;
   testQuestions: string[]; testAnswers: number[]; handleAnswerChange: (idx: number, score: number) => void;
   calculateScore: () => void; resetTest: () => void;
   testResult: { level: string; recommendation: string } | null; testTotalScore: number | null;
-  handleOptionClick: (e: React.MouseEvent) => void; comparisonMessage: string | null;
+  handleOptionClick: (e: React.MouseEvent) => void;
   isLoggedIn: boolean; onLoginForHistory: () => void;
   chartjsConstructor: ChartConstructor; isChartJsLoaded: boolean; testHistory: TestHistoryRecord[];
 }) => {
@@ -1624,6 +1633,26 @@ const AddictionTestModal = React.memo((({
     ctx.strokeText("★", 12, 12);
     // 本体
     ctx.fillStyle = "#f59e0b";
+    ctx.fillText("★", 12, 12);
+    return c;
+  }, []);
+
+  // ★最新（赤）：最新ポイントを赤い★で描画するためのキャンバス
+  const latestStarPointStyle = React.useMemo(() => {
+    if (typeof document === "undefined") return "star" as any;
+    const c = document.createElement("canvas");
+    c.width = 24;
+    c.height = 24;
+    const ctx = c.getContext("2d");
+    if (!ctx) return "star" as any;
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.font = "18px system-ui, -apple-system, Segoe UI, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "rgba(255,255,255,0.95)";
+    ctx.strokeText("★", 12, 12);
+    ctx.fillStyle = "#ef4444";
     ctx.fillText("★", 12, 12);
     return c;
   }, []);
@@ -1668,7 +1697,7 @@ const AddictionTestModal = React.memo((({
   const historyScores = (testHistory ?? []).map(r => r.score).filter(v => typeof v === "number" && !Number.isNaN(v));
   const scorePool = [testTotalScore, ...historyScores].filter(v => typeof v === "number" && !Number.isNaN(v)) as number[];
   const bestScoreSoFar = scorePool.length ? Math.min(...scorePool) : 0;
-  const isBestUpdate = (testTotalScore !== null) ? (testTotalScore <= bestScoreSoFar) : false;
+  const isBestUpdate = (testTotalScore !== null) ? (isLoggedIn && testTotalScore <= bestScoreSoFar) : false;
 
   const calcImproveStreak = () => {
     const scores = (testHistory ?? []).map(r => r.score).filter(v => typeof v === "number" && !Number.isNaN(v));
@@ -1717,11 +1746,22 @@ const AddictionTestModal = React.memo((({
         message: "この記録は“保存版”です。次も同じ流れでいけます。",
       };
     }
+
+    // ✅ 依存度レベルに応じたスタンプ（英語ラベル）
+    const levelStamp = (() => {
+      const lv = testResult?.level;
+      if (lv === "低依存") return "PERFECT";
+      if (lv === "軽度依存") return "CAUTION";
+      if (lv === "中度依存") return "ACTION";
+      if (lv === "重度依存") return "ALERT";
+      return "CHECKED";
+    })();
+
     if (delta === null) {
       return {
         title: "📄 診断完了",
         big: `スコア ${testTotalScore ?? "—"}`,
-        stamp: "CHECKED",
+        stamp: levelStamp,
         message: subline,
       };
     }
@@ -1729,7 +1769,7 @@ const AddictionTestModal = React.memo((({
       return {
         title: `🎉 前回より ${delta}点！`,
         big: `${delta}点`,
-        stamp: "GREAT JOB",
+        stamp: levelStamp,
         message: subline,
       };
     }
@@ -1737,14 +1777,14 @@ const AddictionTestModal = React.memo((({
       return {
         title: `🛠 今日は増えた日（+${delta}）`,
         big: `+${delta}点`,
-        stamp: "RESET DAY",
+        stamp: levelStamp,
         message: subline,
       };
     }
     return {
-      title: "🧊 安定キープ！",
+      title: "🥱 安定キープ！",
       big: "±0点",
-      stamp: "KEEP GOING",
+      stamp: levelStamp,
       message: subline,
     };
   })();
@@ -1754,13 +1794,19 @@ const AddictionTestModal = React.memo((({
     switch (certificate.stamp) {
       case "BEST SCORE":
         return { base: "border-amber-300/70 bg-amber-50", text: "text-amber-800", blink: "rgba(245,158,11,0.55)" };
+
+      // ✅ レベル（PERFECT/CAUTION/ACTION/ALERT）に応じて色を変更
+      case "PERFECT":
+        return { base: "border-emerald-300/70 bg-emerald-50", text: "text-emerald-800", blink: "rgba(16,185,129,0.50)" };
+      case "CAUTION":
+        return { base: "border-yellow-300/70 bg-yellow-50", text: "text-yellow-800", blink: "rgba(234,179,8,0.50)" };
+      case "ACTION":
+        return { base: "border-orange-300/70 bg-orange-50", text: "text-orange-800", blink: "rgba(249,115,22,0.50)" };
+      case "ALERT":
+        return { base: "border-rose-300/70 bg-rose-50", text: "text-rose-800", blink: "rgba(244,63,94,0.50)" };
+
       case "CHECKED":
         return { base: "border-slate-300/70 bg-slate-50", text: "text-slate-700", blink: "rgba(148,163,184,0.45)" };
-      case "GREAT JOB":
-        return { base: "border-emerald-300/70 bg-emerald-50", text: "text-emerald-800", blink: "rgba(16,185,129,0.50)" };
-      case "RESET DAY":
-        return { base: "border-rose-300/70 bg-rose-50", text: "text-rose-800", blink: "rgba(244,63,94,0.50)" };
-      case "KEEP GOING":
       default:
         return { base: "border-indigo-300/70 bg-indigo-50", text: "text-indigo-800", blink: "rgba(99,102,241,0.50)" };
     }
@@ -1769,7 +1815,6 @@ const AddictionTestModal = React.memo((({
   const stampStyle = {
     ["--dw-blink" as any]: stampTheme.blink,
   } as React.CSSProperties;
-
 
   // ===== グラフ =====
   const recent = (testHistory ?? []).slice(0, 10).reverse();
@@ -1785,8 +1830,16 @@ const AddictionTestModal = React.memo((({
   });
 
   const pointRadius = scoresChrono.map(() => 4);
-  const pointBg = scoresChrono.map((_, i) => (isBestPoint[i] ? "#f59e0b" : "#6366F1"));
+  const pointBg = scoresChrono.map<string>((_, i) => (isBestPoint[i] ? "#f59e0b" : "#6366F1"));
   const pointStyle = scoresChrono.map((_, i) => (isBestPoint[i] ? bestPointStyle : "circle"));
+  // ✅ 最新ポイント（右端）を赤色に固定（点滅なし）
+  const lastIdx = scoresChrono.length - 1;
+  if (lastIdx >= 0) {
+    pointBg[lastIdx] = "#ef4444";
+    pointRadius[lastIdx] = 5;
+    pointStyle[lastIdx] = isBestPoint[lastIdx] ? latestStarPointStyle : "circle";
+  }
+
 
   
 
@@ -1828,6 +1881,8 @@ const sparkData = {
         pointRadius,
         pointBackgroundColor: pointBg,
         pointStyle,
+        pointBorderWidth: 0,
+        pointHoverBorderWidth: 0,
         borderWidth: 2,
         fill: true,
       }
@@ -1835,6 +1890,15 @@ const sparkData = {
   };
 
   const sparkOptions = {
+    animation: { duration: 0 },
+    animations: { colors: { duration: 0 }, numbers: { duration: 0 } },
+    transitions: {
+      active: { animation: { duration: 0 } },
+      resize: { animation: { duration: 0 } },
+      show: { animation: { duration: 0 } },
+      hide: { animation: { duration: 0 } },
+    },
+
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -1883,6 +1947,8 @@ const sparkData = {
       point: {
         hitRadius: 10,
         hoverRadius: 6,
+        borderWidth: 0,
+        hoverBorderWidth: 0,
       },
       line: {
         borderWidth: 2,
@@ -1893,7 +1959,8 @@ const sparkData = {
         display: true,
         grid: { display: false },
         ticks: {
-          maxTicksLimit: 6,
+          autoSkip: false,
+          maxTicksLimit: 10,
           color: "#6b7280",
           font: { size: 10, weight: "bold" },
           callback: (value: any, index: number) => {
@@ -1918,7 +1985,7 @@ const sparkData = {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} className="relative" onClick={() => setIsModalOpen(false)}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} className="relative">
       {/* ===== 外側（黒背景）FX：派手 ===== */}
       <div className={`dwfx-outer ${fxMode}`} aria-hidden="true">
         <div className="dwfx-outer__grad" />
@@ -1966,12 +2033,11 @@ const sparkData = {
         )}
       </div>
 
-
       {/* ===== モーダル本体 ===== */}
       <div
         ref={modalBodyRef}
         style={{ position: "relative", zIndex: 99995, width: "100%", maxWidth: 800, maxHeight: "96vh" }}
-        className="bg-white w-full max-w-[92vw] md:max-w-[800px] max-h-[96vh] overflow-y-auto rounded-lg shadow-2xl p-2 md:p-4 relative"
+        className="bg-white w-full max-w-[92vw] md:max-w-[800px] max-h-[96vh] overflow-y-auto rounded-lg shadow-2xl p-2 md:p-4 relative dw-gray-strong"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 内側FX */}
@@ -2005,20 +2071,79 @@ const sparkData = {
                   className={`dw-stamp-blink absolute right-4 top-4 translate-x-1/2 -translate-y-1/2 z-10 grid place-items-center rounded-full border-4 ${stampTheme.base} h-14 w-14 md:h-18 md:w-18 rotate-6 shadow-sm`}
                   style={stampStyle}
                 >
-                  <span className={`text-[10px] md:text-[11px] font-extrabold ${stampTheme.text} text-center leading-tight px-2`}>{certificate.stamp}</span>
+                  <span
+                    className={`text-[10px] md:text-[11px] font-extrabold ${stampTheme.text} text-center px-2 dw-text-blink ${certificate.stamp === "BEST SCORE" ? "leading-tight whitespace-normal" : "leading-none whitespace-nowrap"}`}
+                    style={stampStyle}
+                  >
+                    {certificate.stamp === "BEST SCORE" ? <>BEST<br/>SCORE</> : certificate.stamp}
+                  </span>
                 </div>
               </div>
 
+              {/* ✅ CERTIFICATE直下：信号（4段階）＋現在位置 */}
+              {(() => {
+                const s = testTotalScore;
+                const band =
+                  s == null ? null :
+                  s <= 6 ? 0 :
+                  s <= 14 ? 1 :
+                  s <= 23 ? 2 : 3;
+
+                const bands = [
+                  { label: "低", range: "0–6", bg: "bg-green-500/80", ring: "ring-green-500/50", text: "text-green-800" },
+                  { label: "軽", range: "7–14", bg: "bg-yellow-500/80", ring: "ring-yellow-500/50", text: "text-yellow-900" },
+                  { label: "中", range: "15–23", bg: "bg-orange-500/80", ring: "ring-orange-500/50", text: "text-orange-900" },
+                  { label: "重", range: "24–30", bg: "bg-red-500/80", ring: "ring-red-500/50", text: "text-red-800" },
+                ];
+
+                return (
+                  <div className="mt-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-bold text-gray-700">
+                        スコア{' '}
+                        <span className={`text-lg font-extrabold ${style?.scoreText ?? "text-gray-800"} dw-text-blink`} style={stampStyle}>{s ?? "—"}</span>
+                        <span className="text-gray-400"> / {MAX_SCORE}</span>
+                      </p>
+                    </div>
+
+                    <div className="mt-2 grid grid-cols-4 gap-1">
+                      {bands.map((b, i) => (
+                        <div key={i} className="relative">
+                          <div
+                            className={[
+                              "h-2 rounded",
+                              b.bg,
+                              band === i ? `ring-2 ring-offset-2 ${b.ring}` : "",
+                            ].join(" ")}
+                            aria-label={`${b.label}（${b.range}）`}
+                          />
+                          {band === i && (
+                            <div className={`absolute left-1/2 -translate-x-1/2 top-2.5 text-[14px] font-black text-indigo-600 drop-shadow`}>▲</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-2 flex justify-between text-[11px] font-extrabold text-gray-500 dw-lowhigh">
+                      <span>低</span>
+                      <span>高</span>
+                    </div>
+
+                    <div className="mt-1 flex justify-between text-[11px] font-extrabold text-gray-600">
+                      {bands.map((b, i) => (
+                        <span key={i} className="w-1/4 text-center">{b.label}（{b.range}）</span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* 💬・判定・おすすめ：CERTIFICATE内に表示 */}
               <div className="relative mt-4 space-y-3">
-                {comparisonMessage && (
-                  <div className="p-3 bg-white/90 rounded-lg border-l-4 border-indigo-500 shadow-sm">
-                    <p className="font-bold text-indigo-800 flex items-start text-sm"><span className="mr-2 text-lg">💬</span>{comparisonMessage}</p>
-                  </div>
-                )}
+                
 
                 <p className="text-sm font-bold text-gray-700">
-                  判定レベル: <span className={`${style.scoreText} text-xl font-extrabold`}>{testResult.level}</span>
+                  判定レベル: <span className={`${style.scoreText} text-xl font-extrabold dw-text-blink`} style={stampStyle}>{testResult.level}</span>
                 </p>
 
                 <div className="p-3 rounded-lg bg-indigo-50 border border-indigo-100">
@@ -2031,7 +2156,7 @@ const sparkData = {
             <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-indigo-100 shadow-sm p-4 md:p-5 mb-4">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-sm font-extrabold text-indigo-700">最近の推移（最新10件）<span className="ml-2 text-xs text-gray-500">※スコアは低いほど良い</span></p>
-                <span className="text-xs text-gray-500 font-bold">⭐=ベスト</span>
+                <span className="text-xs text-gray-500 font-bold">⭐=ベスト ／ 🔴=最新</span>
               </div>
               <div className="h-44">
                 <ResourceChart type="line" data={sparkData} options={sparkOptions} plugins={[scoreBandsPlugin]} chartjsConstructor={chartjsConstructor} isChartJsLoaded={isChartJsLoaded} />
@@ -2089,7 +2214,25 @@ const sparkData = {
         )}
 
         {/* ===== CSS（通常の <style>：環境差に強い） ===== */}
-        <style>{`
+  <style>{`
+/* 右端の背景に重なって薄く見える「低/高」対策 */
+.dw-gray-strong .dw-lowhigh{ position:relative; z-index:20; }
+.dw-gray-strong .dw-lowhigh span{ text-shadow: 0 1px 0 rgba(255,255,255,0.95), 0 0 10px rgba(255,255,255,0.65); }
+
+/* ===== モーダル内のグレー文字を統一（dw-gray-strong） ===== */
+.dw-gray-strong .text-gray-400,
+.dw-gray-strong .text-gray-500,
+.dw-gray-strong .text-gray-600{
+  color:#4b5563 !important; /* Tailwind gray-600 */
+}
+
+/* ===== 点滅はスタンプ（枠）だけ：テキスト点滅を無効化 ===== */
+.dw-gray-strong .dw-text-blink{
+  animation: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
 /* ===== CERTIFICATEスタンプ点滅（状態色はCSS変数 --dw-blink） ===== */
 .dw-stamp-blink::after{
   content:"";
@@ -2109,6 +2252,16 @@ const sparkData = {
 }
 .dw-stamp-blink{ will-change: box-shadow, filter; }
 .dw-stamp-blink:hover{ animation-play-state: paused; }
+
+/* ===== 判定レベル/スコア/スタンプ文字 点滅：スタンプと同じ発光感 ===== */
+.dw-text-blink{ animation: dwTextBlink 1.8s ease-in-out infinite; will-change: text-shadow, filter; }
+@keyframes dwTextBlink{
+  0%,100%{ text-shadow: 0 0 0 rgba(0,0,0,0); filter: saturate(1); }
+  50%{ text-shadow: 0 0 14px var(--dw-blink), 0 0 26px var(--dw-blink); filter: saturate(1.15); }
+}
+.dw-text-blink:hover{ animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce){ .dw-text-blink{ animation: none !important; } }
+
 @media (prefers-reduced-motion: reduce){
   .dw-stamp-blink{ animation: none !important; }
   .dw-stamp-blink::after{ display:none; }
@@ -2290,7 +2443,6 @@ const sparkData = {
 .dwfx-emoji-rain.good .er{ filter: drop-shadow(0 12px 16px rgba(16,185,129,.24)); }
 .dwfx-emoji-rain.bad .er{ filter: drop-shadow(0 12px 16px rgba(244,63,94,.26)); }
 
-
 /* ===== ポップアップ外：左右端帯から出現→自然フェードアウト（落下なし） ===== */
 .dwfx-emoji-pop{ position: fixed; inset: 0; z-index: 99993; pointer-events: none; overflow: hidden; }
 .dwfx-emoji-pop .ep{ position: absolute; opacity: 0; animation: dwPopFade var(--dur, 1400ms) ease-out infinite; animation-delay: var(--delay, -0.2s); will-change: opacity, transform; }
@@ -2457,8 +2609,7 @@ const MainContent = ({
   const [isAppStatsLoaded, setIsAppStatsLoaded] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [comparisonMessage, setComparisonMessage] = useState<string | null>(null);
-  const [historyFilter, setHistoryFilter] = useState<"10" | "all">("10");
+const [historyFilter, setHistoryFilter] = useState<"10" | "all">("10");
   const [selectedHistoryRecord, setSelectedHistoryRecord] = useState<TestHistoryRecord | null>(null);
   const [isHistoryDetailOpen, setIsHistoryDetailOpen] = useState(false);
   const [isSurveyOpen, setIsSurveyOpen] = useState(false);
@@ -2482,8 +2633,7 @@ const MainContent = ({
       setUserRatings(loadedRatings);
 
       const latest = loadedHistory?.[0];
-      setComparisonMessage(latest?.comparisonMessage ?? null);
-      setHasLoadedUserData(true);
+setHasLoadedUserData(true);
 
       const pending = loadFromLocalStorage<PendingResult | null>(KEY_PENDING_RESULT, null);
       if (pending && pending.score !== undefined && pending.level && pending.recommendation) {
@@ -2493,22 +2643,19 @@ const MainContent = ({
           score: pending.score,
           level: pending.level,
           recommendation: pending.recommendation,
-          comparisonMessage: pending.comparisonMessage ?? undefined,
-        };
+};
         setTestHistory(prev => [record, ...prev]);
         removeFromLocalStorage(KEY_PENDING_RESULT);
         setTestTotalScore(pending.score);
         setTestResult({ level: pending.level, recommendation: pending.recommendation });
-        setComparisonMessage(pending.comparisonMessage ?? null);
-      }
+}
     } else {
       setTestAnswers(initialTestAnswers);
       setTestTotalScore(initialTestScore);
       setTestResult(initialTestResult);
       setTestHistory([]);
       setUserRatings({});
-      setComparisonMessage(null);
-      setHasLoadedUserData(false);
+setHasLoadedUserData(false);
     }
   }, [currentUser?.id]);
 
@@ -2550,15 +2697,6 @@ const MainContent = ({
     const { level, recommendation } = getResultFromScore(total);
     setTestResult({ level, recommendation });
 
-    let msg = "";
-    if (currentUser && testHistory.length > 0) {
-      const prevScore = testHistory[0].score;
-      if (total < prevScore) msg = IMPROVEMENT_MESSAGES[Math.floor(Math.random() * IMPROVEMENT_MESSAGES.length)];
-      else if (total > prevScore) msg = WORSENING_MESSAGES[Math.floor(Math.random() * WORSENING_MESSAGES.length)];
-      else msg = SAME_SCORE_MESSAGES[Math.floor(Math.random() * SAME_SCORE_MESSAGES.length)];
-    }
-    setComparisonMessage(msg || null);
-
     if (currentUser) {
       const newRecord: TestHistoryRecord = {
         id: Date.now(),
@@ -2566,8 +2704,7 @@ const MainContent = ({
         score: total,
         level,
         recommendation,
-        comparisonMessage: msg || undefined,
-      };
+};
       setTestHistory(prev => [newRecord, ...prev]);
     } else {
       const pending: PendingResult = {
@@ -2575,14 +2712,13 @@ const MainContent = ({
         score: total,
         level,
         recommendation,
-        comparisonMessage: undefined,
-      };
+};
       saveToLocalStorage(KEY_PENDING_RESULT, pending);
     }
     setIsModalOpen(true);
   };
 
-  const resetTest = () => { setTestAnswers(new Array(testQuestions.length).fill(null)); setTestTotalScore(null); setTestResult(null); setComparisonMessage(null); };
+  const resetTest = () => { setTestAnswers(new Array(testQuestions.length).fill(null)); setTestTotalScore(null); setTestResult(null); };
 
   const handleDeleteHistoryItem = (e: React.MouseEvent, recordId: number) => {
     e.stopPropagation();
@@ -2854,8 +2990,7 @@ const MainContent = ({
         testResult={testResult}
         testTotalScore={testTotalScore}
         handleOptionClick={handleOptionClick}
-        comparisonMessage={comparisonMessage}
-        isLoggedIn={!!currentUser}
+isLoggedIn={!!currentUser}
         onLoginForHistory={onOpenAuth}
         chartjsConstructor={chartjsConstructor}
         isChartJsLoaded={isChartJsLoaded}
