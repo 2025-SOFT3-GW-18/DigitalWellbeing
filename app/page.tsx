@@ -1694,10 +1694,25 @@ const AddictionTestModal = React.memo((({
   const fxMode: "good" | "bad" | "neutral" =
     !testResult ? "neutral" : (isBadLevel || (delta !== null && delta > 0)) ? "bad" : (delta !== null && delta < 0) ? "good" : "neutral";
 
-  const historyScores = (testHistory ?? []).map(r => r.score).filter(v => typeof v === "number" && !Number.isNaN(v));
-  const scorePool = [testTotalScore, ...historyScores].filter(v => typeof v === "number" && !Number.isNaN(v)) as number[];
-  const bestScoreSoFar = scorePool.length ? Math.min(...scorePool) : 0;
-  const isBestUpdate = (testTotalScore !== null) ? (isLoggedIn && testTotalScore <= bestScoreSoFar) : false;
+// ✅ BEST SCORE を表示して良い判定（低依存/軽度依存のみ）
+const canShowBestByLevel =
+  testResult?.level === "低依存" || testResult?.level === "軽度依存";
+
+const historyScores = (testHistory ?? [])
+  .map(r => r.score)
+  .filter(v => typeof v === "number" && !Number.isNaN(v)) as number[];
+
+const scorePool = [testTotalScore, ...historyScores]
+  .filter(v => typeof v === "number" && !Number.isNaN(v)) as number[];
+
+const bestScoreSoFar = scorePool.length ? Math.min(...scorePool) : 0;
+
+// ✅ ログイン中 かつ 「低依存/軽度依存」のときだけ BEST を許可（同点でも表示：<=）
+const isBestUpdate =
+  testTotalScore !== null &&
+  isLoggedIn &&
+  canShowBestByLevel &&
+  testTotalScore <= bestScoreSoFar;
 
   const calcImproveStreak = () => {
     const scores = (testHistory ?? []).map(r => r.score).filter(v => typeof v === "number" && !Number.isNaN(v));
