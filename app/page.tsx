@@ -768,7 +768,7 @@ const UnifiedAuthModal = ({
               <button type="submit" className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition">ログイン</button>
             </form>
 
-            <p className="mt-3 text-xs text-gray-400 text-center">管理者（admin / admin）もこちらからログインできます</p>
+            {/*<p className="mt-3 text-xs text-gray-400 text-center">管理者（admin / admin）もこちらからログインできます</p>*/}
             <div className="mt-3 text-center">
               <span className="text-xs text-gray-500 mr-1">アカウントを作成しませんか？</span>
               <button type="button" onClick={() => { setMode("register"); setPassword(""); setPasswordConfirm(""); }} className="text-xs text-indigo-600 underline hover:text-indigo-700">ユーザー登録へ</button>
