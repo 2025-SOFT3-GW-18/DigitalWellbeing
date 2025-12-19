@@ -493,7 +493,7 @@ const SurveyModal = ({ isOpen, onClose, app, onSubmit, onDelete, existingRating 
   const ratingLabels: Record<string, string> = { effectiveness: "効果", fun: "楽しさ", ease: "手軽さ", continuity: "継続性", design: "デザイン" };
 
   return (
-    <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-[100]">
+    <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center p-4 z-[100]">
       <div className="bg-white w-full max-w-sm rounded-xl shadow-2xl p-6 relative" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={onClose}
@@ -1554,7 +1554,7 @@ const HistoryDetailModal = ({ isOpen, onClose, record }: { isOpen: boolean; onCl
   if (!isOpen || !record) return null;
   const style = getResultStyle(record.level);
   return (
-    <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-[100]">
+    <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center p-4 z-[100]">
       <div className="bg-white w-full max-w-md rounded-xl shadow-2xl p-6 relative" onClick={(e) => e.stopPropagation()}>
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 transition p-2 rounded-full bg-gray-100 hover:bg-gray-200" aria-label="閉じる">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -2625,6 +2625,14 @@ const MainContent = ({
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 const [historyFilter, setHistoryFilter] = useState<"10" | "all">("10");
+  const HISTORY_LIST_PAGE_SIZE = 20;
+  const [historyListPage, setHistoryListPage] = useState(1);
+
+  // フィルタ切替時はページを先頭へ
+  useEffect(() => {
+    setHistoryListPage(1);
+  }, [historyFilter]);
+
   const [selectedHistoryRecord, setSelectedHistoryRecord] = useState<TestHistoryRecord | null>(null);
   const [isHistoryDetailOpen, setIsHistoryDetailOpen] = useState(false);
   const [isSurveyOpen, setIsSurveyOpen] = useState(false);
@@ -2833,7 +2841,13 @@ setHasLoadedUserData(false);
   };
 
   const renderContent = () => {
-    const displayHistory = historyFilter === "10" ? testHistory.slice(0, 10) : testHistory;
+    const historyListTotal = testHistory.length;
+    const historyListTotalPages = Math.max(1, Math.ceil(historyListTotal / HISTORY_LIST_PAGE_SIZE));
+    // すべて表示時はページング（20件/ページ）
+    const displayHistory = historyFilter === "10"
+      ? testHistory.slice(0, 10)
+      : testHistory.slice((historyListPage - 1) * HISTORY_LIST_PAGE_SIZE, historyListPage * HISTORY_LIST_PAGE_SIZE);
+
 
     switch (activeTab) {
       case "diagnosis":
@@ -2856,8 +2870,8 @@ setHasLoadedUserData(false);
               <div className="flex justify-between items-center mb-6 pb-2 border-b border-gray-100">
                 <h3 className="text-lg font-bold text-gray-700 flex items-center"><span className="mr-2">📋</span> 過去の履歴</h3>
                 <div className="flex space-x-2 bg-gray-100 p-1 rounded-lg">
-                  <button onClick={() => setHistoryFilter("10")} className={`px-3 py-1 rounded-md text-xs font-bold transition ${historyFilter === "10" ? "bg-white text-indigo-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>最新10件</button>
-                  <button onClick={() => setHistoryFilter("all")} className={`px-3 py-1 rounded-md text-xs font-bold transition ${historyFilter === "all" ? "bg-white text-indigo-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>すべて</button>
+                  <button onClick={() => { setHistoryFilter("10"); setHistoryListPage(1); }} className={`px-3 py-1 rounded-md text-xs font-bold transition ${historyFilter === "10" ? "bg-white text-indigo-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>最新10件</button>
+                  <button onClick={() => { setHistoryFilter("all"); setHistoryListPage(1); }} className={`px-3 py-1 rounded-md text-xs font-bold transition ${historyFilter === "all" ? "bg-white text-indigo-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>すべて</button>
                 </div>
               </div>
 
@@ -2891,6 +2905,25 @@ setHasLoadedUserData(false);
                       </div>
                     </div>
                   ))}
+
+                  {historyFilter === "all" && historyListTotal > 0 && (
+                    <div className="flex items-center justify-center gap-2 pt-3">
+                      <button
+                        onClick={() => setHistoryListPage((p) => Math.max(1, p - 1))}
+                        disabled={historyListPage <= 1}
+                        className={`px-3 py-1 rounded-md text-xs font-bold transition border ${historyListPage <= 1 ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed" : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"}`}>
+                        ←
+                      </button>
+                      <span className="text-xs font-bold text-gray-600">{historyListPage} / {historyListTotalPages}</span>
+                      <button
+                        onClick={() => setHistoryListPage((p) => Math.min(historyListTotalPages, p + 1))}
+                        disabled={historyListPage >= historyListTotalPages}
+                        className={`px-3 py-1 rounded-md text-xs font-bold transition border ${historyListPage >= historyListTotalPages ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed" : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"}`}>
+                        →
+                      </button>
+                    </div>
+                  )}
+
                 </div>
               )}
 
