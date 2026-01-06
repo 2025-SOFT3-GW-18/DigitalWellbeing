@@ -1107,6 +1107,159 @@ const KnowledgeSection = () => {
   - 自分の投稿が分かる表示（バッジ＋色）
   - 時刻表示は日本時間（Asia/Tokyo）
 =============================================== */
+
+
+// ===== 掲示板：投稿編集インライン（IME入力が途切れないように BoardSection の外へ） =====
+type PostEditorInlineProps = {
+  editingBody: string;
+  setEditingBody: (v: string) => void;
+  focusCls: string;
+  onCancel: () => void;
+  onSave: () => void;
+};
+const PostEditorInline: React.FC<PostEditorInlineProps> = ({
+  editingBody,
+  setEditingBody,
+  focusCls,
+  onCancel,
+  onSave,
+}) => (
+  <div className="mt-2">
+    <textarea
+      value={editingBody}
+      onChange={(e) => setEditingBody(e.target.value)}
+      className={`w-full p-3 border border-gray-300 rounded-lg min-h-[120px] ${focusCls}`}
+      maxLength={800}
+      aria-label="編集本文"
+    />
+    <div className="mt-2 flex items-center justify-between text-xs text-gray-500 font-bold">
+      <span>{editingBody.length} / 800</span>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-indigo-200"
+        >
+          キャンセル
+        </button>
+        <button
+          type="button"
+          onClick={onSave}
+          className="px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-indigo-200"
+        >
+          保存
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+// ===== 掲示板：投稿行（IME入力が途切れないように BoardSection の外へ） =====
+type RenderPostRowProps = {
+  post: BoardPost;
+  currentUser: User | null;
+  selectedThread: BoardThread | null;
+  no: number;
+  highlightPostId: string | null;
+  resolveAuthorIcon: (p: BoardPost) => string;
+  resolveAuthorLabel: (p: BoardPost) => string;
+  fmtJst: (iso?: string) => string;
+  editingId: string | null;
+  editingBody: string;
+  setEditingId: (v: string | null) => void;
+  setEditingBody: (v: string) => void;
+  updatePost: (postId: string, nextBody: string) => void;
+  deletePost: (postId: string) => void;
+  focusCls: string;
+};
+
+const RenderPostRow: React.FC<RenderPostRowProps> = ({
+  post,
+  currentUser,
+  selectedThread,
+  no,
+  highlightPostId,
+  resolveAuthorIcon,
+  resolveAuthorLabel,
+  fmtJst,
+  editingId,
+  editingBody,
+  setEditingId,
+  setEditingBody,
+  updatePost,
+  deletePost,
+  focusCls,
+}) => {
+  const isMine = !!currentUser && post.authorUserId === currentUser.id;
+  const isOwnerPost = !!selectedThread && post.authorUserId === selectedThread.createdByUserId;
+  const wrapCls = isMine
+    ? "p-4 rounded-xl border border-indigo-200 bg-gray-50"
+    : "p-4 rounded-xl border border-gray-200 bg-gray-50";
+
+  return (
+    <div id={`dwpost-${post.id}`}>
+      <div className={`${wrapCls} ${highlightPostId === post.id ? "ring-2 ring-indigo-400" : ""}`}>
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div>
+            <p className="text-xs text-gray-700 font-extrabold">
+              No.{no} ・ {resolveAuthorIcon(post)} {resolveAuthorLabel(post)}
+              {isMine ? (
+                <span className="ml-2 text-xs px-2 py-0.5 rounded bg-indigo-600 text-white font-extrabold">自分</span>
+              ) : null}
+              {isOwnerPost ? (
+                <span className="ml-2 text-xs px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 font-extrabold">スレ主</span>
+              ) : null}
+              <span className="ml-2 text-gray-400 font-bold">{fmtJst(post.createdAt)}</span>
+              {post.updatedAt ? <span className="ml-2 text-xs text-gray-400">（編集済）</span> : null}
+            </p>
+          </div>
+
+          {isMine && (
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingId(post.id);
+                  setEditingBody(post.body);
+                  // ✅スクロールさせない（編集ボタンで画面が動かないように）
+                }}
+                className="text-xs px-3 py-1.5 rounded bg-amber-50 border border-amber-200 text-amber-800 font-bold hover:bg-amber-100 transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-amber-200"
+              >
+                編集
+              </button>
+              <button
+                type="button"
+                onClick={() => deletePost(post.id)}
+                className="text-xs px-3 py-1.5 rounded bg-red-50 border border-red-200 text-red-700 font-bold hover:bg-red-100 transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-red-200"
+              >
+                削除
+              </button>
+            </div>
+          )}
+        </div>
+
+        {editingId === post.id ? (
+          <PostEditorInline
+            editingBody={editingBody}
+            setEditingBody={setEditingBody}
+            focusCls={focusCls}
+            onCancel={() => {
+              setEditingId(null);
+              setEditingBody("");
+            }}
+            onSave={() => {
+              updatePost(post.id, editingBody);
+              setEditingId(null);
+              setEditingBody("");
+            }}
+          />
+        ) : (
+          <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{post.body}</p>
+        )}
+      </div>
+    </div>
+  );
+};
 const BoardSection: React.FC<{ currentUser: User | null; onRequireLogin: () => void }> = ({ currentUser, onRequireLogin }) => {
   const TAG_OPTIONS: { id: string; label: string }[] = [
   { id: "question", label: "質問" },
@@ -1560,6 +1713,17 @@ const scrollToCreateBox = () => {
     }
   };
 
+  // ✅ タグ選択の見やすさ改善（選択中：✓＋リング＋影）
+  const tagToggleBtnClass = (tagId: string, active: boolean) => {
+    return [
+      "relative text-xs px-3 py-2 rounded-lg border font-extrabold transition",
+      "active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-indigo-200",
+      tagChipClass(tagId),
+      active ? "opacity-100 ring-2 ring-indigo-400 shadow-md" : "opacity-70 hover:opacity-100 hover:shadow-sm",
+    ].join(" ");
+  };
+
+
   const RECENT_DAYS = 2;
   const isRecent = (iso?: string) => {
     if (!iso) return false;
@@ -1764,8 +1928,14 @@ const scrollToCreateBox = () => {
                   key={t.id}
                   type="button"
                   onClick={() => setTags((prev) => toggleTag(prev, t.id))}
-                  className={`text-xs px-3 py-2 rounded-lg border font-bold transition active:scale-[0.99] ${tagChipClass(t.id)} ${active ? "opacity-100" : "opacity-60 hover:opacity-90"}`}
+                  className={tagToggleBtnClass(t.id, active)}
+                  aria-pressed={active}
                 >
+                  {active && (
+                    <span className="mr-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/70 border border-white">
+                      ✓
+                    </span>
+                  )}
                   {t.label}
                 </button>
               );
@@ -1905,100 +2075,7 @@ const scrollToCreateBox = () => {
     );
   };
 
-  const PostEditorInline: React.FC<{ post: BoardPost }> = ({ post }) => {
     return (
-      <div className="mt-2">
-        <textarea
-          value={editingBody}
-          onChange={(e) => setEditingBody(e.target.value)}
-          className={`w-full p-3 border border-gray-300 rounded-lg min-h-[120px] ${focusCls}`}
-          maxLength={800}
-          aria-label="編集本文"
-        />
-        <div className="mt-2 flex items-center justify-between text-xs text-gray-500 font-bold">
-          <span>{editingBody.length} / 800</span>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setEditingId(null);
-                setEditingBody("");
-              }}
-              className="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-indigo-200"
-            >
-              キャンセル
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                updatePost(post.id, editingBody);
-                setEditingId(null);
-                setEditingBody("");
-              }}
-              className="px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-indigo-200"
-            >
-              保存
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const RenderPostRow: React.FC<{ post: BoardPost }> = ({ post }) => {
-    const isMine = !!currentUser && post.authorUserId === currentUser.id;
-    const no = postNoMap.get(post.id) ?? 0;
-    const isOwnerPost = !!selectedThread && post.authorUserId === selectedThread.createdByUserId;
-
-    const wrapCls = isMine
-      ? "p-4 rounded-xl border border-indigo-200 bg-gray-50"
-      : "p-4 rounded-xl border border-gray-200 bg-gray-50";
-
-    return (
-      <div id={`dwpost-${post.id}`}>
-        <div className={`${wrapCls} ${highlightPostId === post.id ? "ring-2 ring-indigo-400" : ""}`}>
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <div>
-              <p className="text-xs text-gray-700 font-extrabold">
-                No.{no} ・ {resolveAuthorIcon(post)} {resolveAuthorLabel(post)}
-                {isMine ? <span className="ml-2 text-xs px-2 py-0.5 rounded bg-indigo-600 text-white font-extrabold">自分</span> : null}
-                {isOwnerPost ? <span className="ml-2 text-xs px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 font-extrabold">スレ主</span> : null}
-                <span className="ml-2 text-gray-400 font-bold">{fmtJst(post.createdAt)}</span>
-                {post.updatedAt ? <span className="ml-2 text-xs text-gray-400">（編集済）</span> : null}
-              </p>
-            </div>
-
-            {isMine && (
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingId(post.id);
-                    setEditingBody(post.body);
-                    scrollToComposer();
-                  }}
-                  className="text-xs px-3 py-1.5 rounded bg-amber-50 border border-amber-200 text-amber-800 font-bold hover:bg-amber-100 transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-amber-200"
-                >
-                  編集
-                </button>
-                <button
-                  type="button"
-                  onClick={() => deletePost(post.id)}
-                  className="text-xs px-3 py-1.5 rounded bg-red-50 border border-red-200 text-red-700 font-bold hover:bg-red-100 transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-red-200"
-                >
-                  削除
-                </button>
-              </div>
-            )}
-          </div>
-
-          {editingId === post.id ? <PostEditorInline post={post} /> : <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{post.body}</p>}
-        </div>
-      </div>
-    );
-  };
-
-  return (
     <div className="space-y-6">
       {!currentUser && (
         <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-100">
@@ -2240,8 +2317,14 @@ return (
                           key={t.id}
                           type="button"
                           onClick={() => setThreadTagsDraft((prev) => toggleTag(prev, t.id))}
-                          className={`text-xs px-3 py-2 rounded-lg border font-bold transition active:scale-[0.99] ${tagChipClass(t.id)} ${active ? "opacity-100" : "opacity-60 hover:opacity-90"}`}
+                          className={tagToggleBtnClass(t.id, active)}
+                          aria-pressed={active}
                         >
+                          {active && (
+                            <span className="mr-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/70 border border-white">
+                              ✓
+                            </span>
+                          )}
                           {t.label}
                         </button>
                       );
@@ -2287,7 +2370,24 @@ return (
             {filteredPosts.length === 0 ? (
               <p className="text-sm text-gray-400">まだ投稿がありません。最初の投稿をしてみましょう。</p>
             ) : (
-              filteredPosts.map((p) => <RenderPostRow key={p.id} post={p} />)
+              filteredPosts.map((p) => <RenderPostRow
+            key={p.id}
+            post={p}
+            currentUser={currentUser}
+            selectedThread={selectedThread}
+            no={postNoMap.get(p.id) ?? 0}
+            highlightPostId={highlightPostId}
+            resolveAuthorIcon={resolveAuthorIcon}
+            resolveAuthorLabel={resolveAuthorLabel}
+            fmtJst={fmtJst}
+            editingId={editingId}
+            editingBody={editingBody}
+            setEditingId={setEditingId}
+            setEditingBody={setEditingBody}
+            updatePost={updatePost}
+            deletePost={deletePost}
+            focusCls={focusCls}
+          />)
             )}
           </div>
 
