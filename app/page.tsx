@@ -1,6 +1,6 @@
 
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 
 /* ===============================================
  1. 型定義・インターフェース
@@ -165,7 +165,7 @@ const ADDICTION_TYPES: Record<AddictionTypeId, AddictionType> = {
     // 難易度: 初級 / コスト: free / 選定理由: 衝動に気づいて止める練習になり、反射的なチェックを減らしやすい。
     { id: "mindfulness_meditation", icon: "🧘", name: "マインドフルネス瞑想", description: "「今、ここ」に集中する訓練で、スマホへの衝動をやり過ごす力を作る。", minutes: 8, place: "indoor", firstStep: "椅子に座って目を閉じ呼吸を数える", cost: "free", difficulty: "初級" },
     // 難易度: 初級 / コスト: free / 選定理由: 画面刺激の代替になり、手が塞がってスマホを触りにくい。
-    { id: "radio_listening", icon: "📻", name: "ラジオを聴く", description: "耳だけ使い、目を休ませつつ家事などに集中できる。", minutes: 15, place: "indoor", supplies: ["ラジオ"], firstStep: "ラジオを流して洗い物を片づける", cost: "free", difficulty: "初級" },
+    { id: "radio_listening", icon: "📻", name: "ラジオを聴く", description: "耳だけ使い、目を休ませつつ家事などに集中できる。", minutes: 15, place: "indoor", supplies: ["ラジオ"], firstStep: "ラジオを流して洗い物を片づける", cost: "low", difficulty: "初級" },
   ],
   },
   game: {
@@ -178,7 +178,7 @@ const ADDICTION_TYPES: Record<AddictionTypeId, AddictionType> = {
     recommendedAppIds: ["forest", "focus_quest"],
     recommendedHobbies: [
     // 難易度: 中級 / コスト: mid / 選定理由: 刺激を「完成の達成感」へ置換できる。
-    { id: "cooking", icon: "🍳", name: "料理・お菓子作り", description: "両手が塞がり、段取りに集中するためスマホを忘れやすい。", minutes: 45, place: "indoor", supplies: ["食材", "調理器具"], firstStep: "湯を沸かして味噌汁を作る", cost: "mid", difficulty: "中級" },
+    { id: "cooking", icon: "🍳", name: "料理・お菓子作り", description: "両手が塞がり、段取りに集中するためスマホを忘れやすい。", minutes: 45, place: "indoor", supplies: ["食材", "調理器具"], firstStep: "朝ごはんにスクランブルエッグを作る", cost: "mid", difficulty: "中級" },
     // 難易度: 中級 / コスト: low / 選定理由: 1タスクに集中しやすく、終わりを決められる。
     { id: "jigsaw_puzzle", icon: "🧩", name: "ジグソーパズル", description: "視覚情報を整理する快感が、スクロールの代替になる。", minutes: 30, place: "indoor", supplies: ["ジグソーパズル"], firstStep: "角と縁を分けて並べる", cost: "low", difficulty: "中級" },
     // 難易度: 中級 / コスト: low / 選定理由: 手が塞がり、単純反復で没頭しやすい。
@@ -224,7 +224,7 @@ const ADDICTION_TYPES: Record<AddictionTypeId, AddictionType> = {
     // 難易度: 中級 / コスト: mid / 選定理由: 環境強制でデバイスフリー時間を確保できる。
     { id: "movie_theater", icon: "🎬", name: "映画鑑賞", description: "上映中はスマホを触りにくい環境。強制的に“遮断”ができる。", minutes: 140, place: "indoor", supplies: ["チケット"], firstStep: "席に座って作品に集中する", cost: "mid", difficulty: "中級" },
     // 難易度: 上級 / コスト: high / 選定理由: 自然＋移動で注意が外へ向き、確認ループから離れやすい。
-    { id: "camping_hiking", icon: "🏕️", name: "キャンプ・登山", description: "自然の中で電波や利便性から距離を取り、脳をデトックスする。", minutes: 180, place: "outdoor", supplies: ["歩きやすい靴", "水", "軽食"], firstStep: "水とタオルを用意して近場を歩く", cost: "high", difficulty: "上級" },
+    { id: "camping_hiking", icon: "🏕️", name: "キャンプ・登山", description: "自然の中で電波や利便性から距離を取り、脳をデトックスする。", minutes: 180, place: "outdoor", supplies: ["歩きやすい靴", "水", "軽食"], firstStep: "近くの公園で軽食を食べる", cost: "high", difficulty: "上級" },
     // 難易度: 中級 / コスト: mid / 選定理由: 完全遮断＋運動で衝動が下がりやすい。
     { id: "swimming", icon: "🏊", name: "水泳", description: "スマホを持ち込めない環境で、強制的に遮断できる。", minutes: 60, place: "indoor", supplies: ["水着", "タオル", "ゴーグル"], firstStep: "水着とタオルを鞄に入れてプールへ行く", cost: "mid", difficulty: "中級" },
     // 難易度: 中級 / コスト: mid / 選定理由: 強制遮断＋リラックスで仕事の確認ループを断ちやすい。
@@ -484,8 +484,7 @@ const IconPicker = ({ value, onChange, heightClass }: { value: string; onChange:
           key={ic}
           type="button"
           onClick={() => onChange(ic)}
-          title={ic}
-          className={`flex items-center justify-center aspect-square rounded-lg border transition leading-none select-none ${value === ic
+                    className={`flex items-center justify-center aspect-square rounded-lg border transition leading-none select-none ${value === ic
             ? "bg-indigo-50 border-indigo-300 ring-2 ring-indigo-200"
             : "bg-white border-gray-200 hover:bg-gray-100"
           }`}
@@ -898,6 +897,10 @@ const AdminActionDemoModal = ({
     if (confirm("全ユーザーの診断履歴・結果・タイプを削除します。よろしいですか？")) onExecute();
   };
 
+  const confirmRestore = () => {
+    if (confirm("評価データを0件へ初期化します。よろしいですか？")) onRestore();
+  };
+
   return (
     <div className="fixed inset-0 bg-gray-900/70 z-[100] flex items-center justify-center p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 relative" onClick={(e) => e.stopPropagation()}>
@@ -940,7 +943,7 @@ const AdminActionDemoModal = ({
 
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button onClick={onApplyDemo} className="py-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-800 border border-yellow-200 rounded-lg font-bold">デモとして適用</button>
-              <button onClick={onRestore} className="py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg font-bold">元に戻す（0件へ初期化）</button>
+              <button onClick={confirmRestore} className="py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg font-bold">評価データ初期化</button>
             </div>
           </>
         ) : (
@@ -1209,8 +1212,8 @@ const RenderPostRow: React.FC<RenderPostRowProps> = ({
               {isOwnerPost ? (
                 <span className="ml-2 text-xs px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 font-extrabold">スレ主</span>
               ) : null}
-              <span className="ml-2 text-gray-400 font-bold">{fmtJst(post.createdAt)}</span>
-              {post.updatedAt ? <span className="ml-2 text-xs text-gray-400">（編集済）</span> : null}
+              <span className="ml-2 text-gray-400 font-bold">{fmtJst(post.updatedAt ?? post.createdAt)}</span>
+              {post.updatedAt ? <span className="ml-2 text-xs text-gray-400">（編集済み）</span> : null}
             </p>
           </div>
 
@@ -1255,6 +1258,336 @@ const RenderPostRow: React.FC<RenderPostRowProps> = ({
           />
         ) : (
           <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{post.body}</p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+
+// ===== 掲示板：新規スレッド作成フォーム（BoardSection の外へ移動して再マウントを防止） =====
+type ThreadCreateBoxProps = {
+  currentUser: User | null;
+  profile: BoardProfile;
+  setProfile: React.Dispatch<React.SetStateAction<BoardProfile>>;
+  focusCls: string;
+  TAG_OPTIONS: { id: string; label: string }[];
+  tagToggleBtnClass: (tagId: string, active: boolean) => string;
+  toggleTag: (arr: string[], tagId: string) => string[];
+  onRequireLogin: () => void;
+  createThread: (title: string, tags: string[]) => void;
+  setIsCreateOpen: React.Dispatch<React.SetStateAction<boolean>>;
+};
+
+const ThreadCreateBox: React.FC<ThreadCreateBoxProps> = ({
+  currentUser,
+  profile,
+  setProfile,
+  focusCls,
+  TAG_OPTIONS,
+  tagToggleBtnClass,
+  toggleTag,
+  onRequireLogin,
+  createThread,
+  setIsCreateOpen,
+}) => {
+  const [isComposingName, setIsComposingName] = React.useState(false);
+  const [displayNameDraft, setDisplayNameDraft] = React.useState(profile.displayName ?? "");
+  const handleDisplayNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const next = e.target.value;
+    if (isComposingName) {
+      setDisplayNameDraft(next);
+      return;
+    }
+    setDisplayNameDraft(next.slice(0, 10));
+  };
+  const handleDisplayNameCompositionStart = () => setIsComposingName(true);
+  const handleDisplayNameCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
+    setIsComposingName(false);
+    const v = (e.currentTarget.value ?? "").slice(0, 10);
+    setDisplayNameDraft(v);
+  };
+
+  const [title, setTitle] = React.useState("");
+  const [tags, setTags] = React.useState<string[]>([]);
+  const [showIconPickerThread, setShowIconPickerThread] = React.useState<boolean>(false);
+
+  return (
+    <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
+      <p className="text-xs text-gray-600 font-bold mb-2">新規スレッド作成（ログイン必須）</p>
+      {currentUser && (
+        <div className="mb-3 p-3 rounded-lg bg-white border border-gray-200">
+          <p className="text-xs text-gray-600 font-bold mb-2">作成者情報（掲示板プロフィール）</p>
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-gray-500 font-bold text-xs">アイコン</span>
+            <button
+              type="button"
+              onClick={() => setShowIconPickerThread((v) => !v)}
+              className="w-10 h-10 rounded-lg bg-white border border-gray-300 flex items-center justify-center text-xl hover:bg-gray-50 transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              title="アイコンを選ぶ"
+            >
+              {profile.icon}
+            </button>
+            <span className="text-gray-500 font-bold text-xs">表示名</span>
+            <input
+              value={displayNameDraft}
+              onChange={handleDisplayNameChange}
+              className={`p-2 border border-gray-300 rounded ${focusCls}`}
+              placeholder="ニックネーム"
+              maxLength={10}
+              onCompositionStart={handleDisplayNameCompositionStart}
+              onCompositionEnd={handleDisplayNameCompositionEnd}
+              aria-label="表示名"
+              onBlur={() => setProfile((prev) => ({ ...prev, displayName: displayNameDraft.slice(0, 10) }))}
+            />
+            <span className="text-gray-400">（最大10文字）</span>
+            <span className="text-xs text-gray-400">※投稿フォームにも同じ設定が反映されます</span>
+          </div>
+          {showIconPickerThread && (
+            <div className="mt-3 p-3 rounded-lg border border-gray-200 bg-white shadow-sm">
+              <div className="grid grid-cols-8 gap-2">
+                {USER_ICONS.map((ic) => {
+                  const active = profile.icon === ic;
+                  return (
+                    <button
+                      key={ic}
+                      type="button"
+                      onClick={() => {
+                        setProfile((prev) => ({ ...prev, icon: ic }));
+                        setShowIconPickerThread(false);
+                      }}
+                      className={`w-10 h-10 rounded-lg border flex items-center justify-center text-xl transition active:scale-[0.99] ${active ? "border-indigo-400 bg-indigo-50" : "border-gray-200 bg-white hover:bg-gray-50"}`}
+                    >
+                      {ic}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      <label className="block text-sm font-bold text-gray-600 mb-2">スレッドタイトル（最大20文字）</label>
+      <input
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        readOnly={!currentUser}
+        onMouseDown={(e) => {
+          if (!currentUser) {
+            e.preventDefault();
+            alert("投稿するにはログインが必要です。");
+          }
+        }}
+        onFocus={(e) => {
+          if (!currentUser) {
+            alert("投稿するにはログインが必要です。");
+            try { (e.target as HTMLInputElement).blur(); } catch {}
+          }
+        }}
+        placeholder="例：寝る前のスマホをやめたい"
+        className={`w-full p-3 border border-gray-300 rounded-lg ${focusCls}`}
+        maxLength={20}
+        aria-label="スレッドタイトル"
+      />
+
+      <div className="mt-3">
+        <p className="text-xs text-gray-600 font-bold mb-2">タグ（複数選択可・上限なし）</p>
+        <div className="flex flex-wrap gap-2">
+          {TAG_OPTIONS.map((t) => {
+            const active = tags.includes(t.id);
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTags((prev) => toggleTag(prev, t.id))}
+                className={tagToggleBtnClass(t.id, active)}
+                aria-pressed={active}
+              >
+                {active && (
+                  <span className="mr-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/70 border border-white">✓</span>
+                )}
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-2 text-xs text-gray-500">※未選択の場合はタグなしのまま作成されます。</p>
+      </div>
+
+      <div className="mt-4 flex items-center justify-end">
+        <button
+          onClick={() => {
+            if (!currentUser) { onRequireLogin(); return; }
+            if (!title.trim()) { alert("タイトルを入力して下さい"); return; }
+            const dn = displayNameDraft.trim();
+            if (!dn) { alert("ニックネームを入力してください"); return; }
+            setProfile((prev) => ({ ...prev, defaultVisibility: "nickname", displayName: dn.slice(0, 10) }));
+            createThread(title, tags);
+            setTitle("");
+            setTags([]);
+            setIsCreateOpen(false);
+          }}
+          className={`px-4 py-3 rounded-lg font-bold transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-indigo-200 bg-indigo-600 text-white hover:bg-indigo-700`}
+        >
+          {currentUser ? "作成" : "ログインして作成"}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ===== 掲示板：投稿フォーム（BoardSection の外へ移動して再マウントを防止） =====
+type PostComposerProps = {
+  currentUser: User | null;
+  onRequireLogin: () => void;
+  profile: BoardProfile;
+  setProfile: React.Dispatch<React.SetStateAction<BoardProfile>>;
+  selectedThread: BoardThread | null;
+  addPost: (threadId: string, body: string, visibility: BoardVisibility) => void;
+  showIconPicker: boolean;
+  setShowIconPicker: React.Dispatch<React.SetStateAction<boolean>>;
+  composerRef: React.RefObject<HTMLDivElement | null>;
+  focusCls: string;
+};
+
+const PostComposer: React.FC<PostComposerProps> = ({
+  currentUser,
+  onRequireLogin,
+  profile,
+  setProfile,
+  selectedThread,
+  addPost,
+  showIconPicker,
+  setShowIconPicker,
+  composerRef,
+  focusCls,
+}) => {
+  const [isComposingName, setIsComposingName] = React.useState(false);
+  const [displayNameDraft, setDisplayNameDraft] = React.useState(profile.displayName ?? "");
+  const handleDisplayNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const next = e.target.value;
+    if (isComposingName) {
+      setDisplayNameDraft(next);
+      return;
+    }
+    setDisplayNameDraft(next.slice(0, 10));
+  };
+  const handleDisplayNameCompositionStart = () => setIsComposingName(true);
+  const handleDisplayNameCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
+    setIsComposingName(false);
+    const v = (e.currentTarget.value ?? "").slice(0, 10);
+    setDisplayNameDraft(v);
+  };
+
+  const [body, setBody] = React.useState("");
+
+  return (
+    <div ref={composerRef} className="mt-6 p-5 rounded-xl bg-white border border-gray-200 shadow-sm">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <p className="text-sm font-extrabold text-gray-800">投稿フォーム</p>
+        <span className="text-xs text-gray-400 font-bold">新規投稿</span>
+      </div>
+
+      {currentUser && (
+        <div className="mt-3 flex items-center gap-3 text-xs flex-wrap">
+          <span className="text-gray-500 font-bold">アイコン</span>
+          <button
+            type="button"
+            onClick={() => setShowIconPicker((v) => !v)}
+            className="w-10 h-10 rounded-lg bg-white border border-gray-300 flex items-center justify-center text-xl hover:bg-gray-50 transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            title="アイコンを選ぶ"
+          >
+            {profile.icon}
+          </button>
+
+          <span className="text-gray-500 font-bold">表示名</span>
+          <input
+            value={displayNameDraft}
+            onChange={handleDisplayNameChange}
+            className={`p-2 border border-gray-300 rounded ${focusCls}`}
+            placeholder="ニックネーム"
+            maxLength={10}
+            onCompositionStart={handleDisplayNameCompositionStart}
+            onCompositionEnd={handleDisplayNameCompositionEnd}
+            aria-label="表示名"
+            onBlur={() => setProfile((prev) => ({ ...prev, displayName: displayNameDraft.slice(0, 10) }))}
+          />
+          <span className="text-gray-400">（最大10文字）</span>
+
+          {showIconPicker && (
+            <div className="p-3 rounded-lg border border-gray-200 bg-white shadow-sm">
+              <div className="grid grid-cols-8 gap-2">
+                {USER_ICONS.map((ic) => {
+                  const active = profile.icon === ic;
+                  return (
+                    <button
+                      key={ic}
+                      type="button"
+                      onClick={() => {
+                        setProfile((prev) => ({ ...prev, icon: ic }));
+                        setShowIconPicker(false);
+                      }}
+                      className={`w-10 h-10 rounded-lg border flex items-center justify-center text-xl transition active:scale-[0.99] ${active ? "border-indigo-400 bg-indigo-50" : "border-gray-200 bg-white hover:bg-gray-50"}`}
+                    >
+                      {ic}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      <textarea
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        readOnly={!currentUser}
+        onMouseDown={(e) => {
+          if (!currentUser) {
+            e.preventDefault();
+            alert("投稿するにはログインが必要です。");
+          }
+        }}
+        onFocus={(e) => {
+          if (!currentUser) {
+            alert("投稿するにはログインが必要です。");
+            try { (e.target as HTMLTextAreaElement).blur(); } catch {}
+          }
+        }}
+        placeholder="質問・相談・共有など（800文字まで）"
+        className={`mt-3 w-full p-3 border border-gray-300 rounded-lg min-h-[120px] ${focusCls}`}
+        maxLength={800}
+        aria-label="本文"
+      />
+
+      <div className="mt-2 flex items-center justify-between text-xs text-gray-500 font-bold">
+        <span>{body.length} / 800</span>
+
+        {!currentUser ? (
+          <button
+            onClick={onRequireLogin}
+            className="px-4 py-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold border border-indigo-200 transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-indigo-200"
+          >
+            ログインして投稿
+          </button>
+        ) : (
+          <button
+            onClick={() => {
+              if (!selectedThread) return;
+              const textBody = body.trim();
+              if (!textBody) { alert("本文を入力してください"); return; }
+              const dn = displayNameDraft.trim();
+              if (!dn) { alert("ニックネームを入力してください"); return; }
+              setProfile((prev) => ({ ...prev, displayName: dn.slice(0, 10) }));
+              addPost(selectedThread.id, body, "nickname");
+              setBody("");
+            }}
+            className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-indigo-200"
+          >
+            投稿
+          </button>
         )}
       </div>
     </div>
@@ -1318,6 +1651,9 @@ const BoardSection: React.FC<{ currentUser: User | null; onRequireLogin: () => v
 
   // スレッド一覧へスクロールするための参照
   const threadListRef = useRef<HTMLDivElement | null>(null);
+  // ✅ スレッド詳細から戻ったとき、一覧のスクロール位置を復元する
+  const listScrollPosRef = useRef<{ isWindow: boolean; top: number } | null>(null);
+  const lastViewedThreadIdRef = useRef<string | null>(null);
   // 新規スレッド作成フォームへスクロールするための参照
   const createBoxRef = useRef<HTMLDivElement | null>(null);
 
@@ -1471,6 +1807,52 @@ const BoardSection: React.FC<{ currentUser: User | null; onRequireLogin: () => v
     });
   };
   const scrollToThreadList = () => scrollOnePageAbove(threadListRef.current);
+  // ✅ スレッド詳細から一覧へ戻ったとき、直前のスクロール位置へ復元
+  // ちらつき（一覧が一瞬先頭表示される）を避けるため useLayoutEffect で描画前に復元します
+  useLayoutEffect(() => {
+    if (selectedThreadId !== null) return;
+    const saved = listScrollPosRef.current;
+    if (!saved || typeof window === "undefined") return;
+
+    try {
+      const el = threadListRef.current;
+      let scroller: HTMLElement | Window = window;
+
+      // 現在のスクロール親（window or 内側スクロールコンテナ）を再取得
+      if (el) {
+        let p: HTMLElement | null = el.parentElement;
+        while (p) {
+          const st = window.getComputedStyle(p);
+          const oy = st.overflowY;
+          if ((oy === "auto" || oy === "scroll") && p.scrollHeight > p.clientHeight) {
+            scroller = p;
+            break;
+          }
+          p = p.parentElement;
+        }
+      }
+
+      if (saved.isWindow || scroller === window) {
+        window.scrollTo({ top: saved.top, behavior: "auto" });
+      } else {
+        (scroller as HTMLElement).scrollTo({ top: saved.top, behavior: "auto" });
+      }
+
+      // 直前に見ていたスレッドが画面外なら、位置を大きく崩さずに可視化（必要時のみ）
+      const tid = lastViewedThreadIdRef.current;
+      if (tid) {
+        const node = document.getElementById(`dwthread-${tid}`);
+        if (node) {
+          const r = node.getBoundingClientRect();
+          if (r.top < 0 || r.bottom > window.innerHeight) {
+            try { node.scrollIntoView({ block: "center", behavior: "auto" }); } catch { /* noop */ }
+          }
+        }
+      }
+    } catch {
+      // noop
+    }
+  }, [selectedThreadId]);
   
 const scrollToCreateBox = () => {
   const el = createBoxRef.current;
@@ -1539,7 +1921,7 @@ const scrollToCreateBox = () => {
 };
 
   const createThread = (title: string, tags: string[]) => {
-    if (!currentUser) return requireLogin();
+    if (!currentUser) return alert("投稿するにはログインが必要です。");
     const t = title.trim();
     if (!t) { alert("タイトルを入力して下さい"); return; }
     const now = new Date().toISOString();
@@ -1556,7 +1938,7 @@ const scrollToCreateBox = () => {
   };
 
   const updateThread = (threadId: string, nextTitle: string, nextTags: string[]) => {
-    if (!currentUser) return requireLogin();
+    if (!currentUser) return alert("投稿するにはログインが必要です。");
     const th = threads.find((t) => t.id === threadId);
     if (!th) return;
     if (th.createdByUserId !== currentUser.id) return alert("スレッド作成者のみ編集できます。");
@@ -1571,7 +1953,7 @@ const scrollToCreateBox = () => {
   };
 
   const deleteThread = (threadId: string) => {
-    if (!currentUser) return requireLogin();
+    if (!currentUser) { onRequireLogin(); return; }
     const th = threads.find((t) => t.id === threadId);
     if (!th) return;
     if (th.createdByUserId !== currentUser.id) return alert("スレッド作成者のみ削除できます。");
@@ -1760,11 +2142,13 @@ const scrollToCreateBox = () => {
   };
 
   const sortedThreads = React.useMemo(() => {
+    // スレッド一覧は『作成日が新しい順』に表示
     return [...threads].sort((a, b) => {
-      const pa = getThreadPriority(a);
-      const pb = getThreadPriority(b);
-      if (pa !== pb) return pa - pb; // タグ優先
-      return (b.updatedAt || "").localeCompare(a.updatedAt || ""); // 同順位は更新日が新しい順
+      const da = (a.createdAt ?? a.updatedAt ?? "");
+      const db = (b.createdAt ?? b.updatedAt ?? "");
+      if (db !== da) return db.localeCompare(da);
+      // 同一時刻の場合は更新日の新しい順で安定化
+      return (b.updatedAt ?? "").localeCompare(a.updatedAt ?? "");
     });
   }, [threads]);
 
@@ -1797,8 +2181,13 @@ const scrollToCreateBox = () => {
   const pagedThreads = filteredThreads.slice(pageStart, pageEnd);
   const threadNoMap = React.useMemo(() => {
     const m = new Map<string, number>();
-    // スレッド番号は『古い順（作成日）』で 1,2,3...
-    const ordered = [...threads].sort((a, b) => (a.createdAt || a.updatedAt || "").localeCompare(b.createdAt || b.updatedAt || ""));
+    // スレッド番号は『作成日が古い順』で 1,2,3...（表示順とは独立）
+    const ordered = [...threads].sort((a, b) => {
+      const da = (a.createdAt ?? a.updatedAt ?? "");
+      const db = (b.createdAt ?? b.updatedAt ?? "");
+      if (da !== db) return da.localeCompare(db);
+      return (a.updatedAt ?? "").localeCompare(b.updatedAt ?? "");
+    });
     ordered.forEach((t, idx) => m.set(t.id, idx + 1));
     return m;
   }, [threads]);
@@ -1823,258 +2212,8 @@ const scrollToCreateBox = () => {
     return base;
   }, [threadAllPosts, currentUser, showMineOnly]);
 
-  const ThreadCreateBox = () => {
-  // IME composition-friendly handling for displayName input
-  const [isComposingName, setIsComposingName] = useState(false);
-  const [displayNameDraft, setDisplayNameDraft] = useState(profile.displayName ?? "");
-  const handleDisplayNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const next = e.target.value;
-      // IME変換中は途中文字列をそのまま保持（ここでsliceすると1文字ずつ確定しやすい）
-      if (isComposingName) {
-        setDisplayNameDraft(next);
-        return;
-      }
-      setDisplayNameDraft(next.slice(0, 10));
-    };
-  const handleDisplayNameCompositionStart = () => setIsComposingName(true);
-  const handleDisplayNameCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
-      setIsComposingName(false);
-      const v = (e.currentTarget.value ?? "").slice(0, 10);
-      setDisplayNameDraft(v);
-    };
-
-    const [title, setTitle] = useState("");
-    const [tags, setTags] = useState<string[]>([]);
-    const [showIconPickerThread, setShowIconPickerThread] = useState<boolean>(false);
-
-    return (
-      <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
-        <p className="text-xs text-gray-600 font-bold mb-2">新規スレッド作成（ログイン必須）</p>
-
-        {currentUser && (
-          <div className="mb-3 p-3 rounded-lg bg-white border border-gray-200">
-            <p className="text-xs text-gray-600 font-bold mb-2">作成者情報（掲示板プロフィール）</p>
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-gray-500 font-bold text-xs">アイコン</span>
-              <button
-                type="button"
-                onClick={() => setShowIconPickerThread((v) => !v)}
-                className="w-10 h-10 rounded-lg bg-white border border-gray-300 flex items-center justify-center text-xl hover:bg-gray-50 transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                title="アイコンを選ぶ"
-              >
-                {profile.icon}
-              </button>
-
-              <span className="text-gray-500 font-bold text-xs">表示名</span>
-              <input
-                value={displayNameDraft}
-                onChange={handleDisplayNameChange}
-                className={`p-2 border border-gray-300 rounded ${focusCls}`}
-                placeholder="ニックネーム"
-                maxLength={10}
-                onCompositionStart={handleDisplayNameCompositionStart}
-                onCompositionEnd={handleDisplayNameCompositionEnd}
-                aria-label="表示名"
-                onBlur={() => setProfile((prev) => ({ ...prev, displayName: displayNameDraft.slice(0, 10) }))}
-              />
-              <span className="text-gray-400">（最大10文字）</span>
-
-              <span className="text-xs text-gray-400">※投稿フォームにも同じ設定が反映されます</span>
-            </div>
-
-            {showIconPickerThread && (
-              <div className="mt-3 p-3 rounded-lg border border-gray-200 bg-white shadow-sm">
-                <div className="grid grid-cols-8 gap-2">
-                  {USER_ICONS.map((ic) => {
-                    const active = profile.icon === ic;
-                    return (
-                      <button
-                        key={ic}
-                        type="button"
-                        onClick={() => {
-                          setProfile((prev) => ({ ...prev, icon: ic }));
-                          setShowIconPickerThread(false);
-                        }}
-                        className={`w-10 h-10 rounded-lg border flex items-center justify-center text-xl transition active:scale-[0.99] ${active ? "border-indigo-400 bg-indigo-50" : "border-gray-200 bg-white hover:bg-gray-50"}`}
-                      >
-                        {ic}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        <label className="block text-sm font-bold text-gray-600 mb-2">スレッドタイトル（最大20文字）</label>
-
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="例：寝る前のスマホをやめたい"
-          className={`w-full p-3 border border-gray-300 rounded-lg ${focusCls}`}
-          maxLength={20}
-          aria-label="スレッドタイトル"
-        />
-
-        <div className="mt-3">
-          <p className="text-xs text-gray-600 font-bold mb-2">タグ（複数選択可・上限なし）</p>
-          <div className="flex flex-wrap gap-2">
-            {TAG_OPTIONS.map((t) => {
-              const active = tags.includes(t.id);
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setTags((prev) => toggleTag(prev, t.id))}
-                  className={tagToggleBtnClass(t.id, active)}
-                  aria-pressed={active}
-                >
-                  {active && (
-                    <span className="mr-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/70 border border-white">
-                      ✓
-                    </span>
-                  )}
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
-          <p className="mt-2 text-xs text-gray-500">※未選択の場合はタグなしのまま作成されます。</p>
-        </div>
-
-        <div className="mt-4 flex items-center justify-end">
-          <button
-            onClick={() => {
-              if (!currentUser) return requireLogin();
-              if (!title.trim()) { alert("タイトルを入力して下さい"); return; }
-              setProfile((prev) => ({ ...prev, defaultVisibility: "nickname", displayName: displayNameDraft.slice(0, 10) }));
-              createThread(title, tags);
-          setTitle("");
-          setTags([]);
-          setIsCreateOpen(false);
-            }}
-            className={`px-4 py-3 rounded-lg font-bold transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-indigo-200 ${currentUser ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-gray-200 text-gray-500 hover:bg-gray-300"}`}
-          >
-            作成
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  const PostComposer = () => {
-  // IME composition-friendly handling for displayName input
-  const [isComposingName, setIsComposingName] = useState(false);
-  const [displayNameDraft, setDisplayNameDraft] = useState(profile.displayName ?? "");
-  const handleDisplayNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const next = e.target.value;
-      if (isComposingName) {
-        setDisplayNameDraft(next);
-        return;
-      }
-      setDisplayNameDraft(next.slice(0, 10));
-    };
-  const handleDisplayNameCompositionStart = () => setIsComposingName(true);
-  const handleDisplayNameCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
-      setIsComposingName(false);
-      const v = (e.currentTarget.value ?? "").slice(0, 10);
-      setDisplayNameDraft(v);
-    };
-
-    const [body, setBody] = useState("");
-    return (
-      <div ref={composerRef} className="mt-6 p-5 rounded-xl bg-white border border-gray-200 shadow-sm">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <p className="text-sm font-extrabold text-gray-800">投稿フォーム</p>
-          <span className="text-xs text-gray-400 font-bold">新規投稿</span>
-        </div>
-
-        {currentUser && (
-          <div className="mt-3 flex items-center gap-3 text-xs flex-wrap">
-            <span className="text-gray-500 font-bold">アイコン</span>
-            <button
-              type="button"
-              onClick={() => setShowIconPicker((v) => !v)}
-              className="w-10 h-10 rounded-lg bg-white border border-gray-300 flex items-center justify-center text-xl hover:bg-gray-50 transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-indigo-200"
-              title="アイコンを選ぶ"
-            >
-              {profile.icon}
-            </button>
-
-            <span className="text-gray-500 font-bold">表示名</span>
-            <input
-              value={displayNameDraft}
-              onChange={handleDisplayNameChange}
-              className={`p-2 border border-gray-300 rounded ${focusCls}`}
-              placeholder="ニックネーム"
-              maxLength={10}
-              onCompositionStart={handleDisplayNameCompositionStart}
-                onCompositionEnd={handleDisplayNameCompositionEnd}
-                aria-label="表示名"
-              onBlur={() => setProfile((prev) => ({ ...prev, displayName: displayNameDraft.slice(0, 10) }))}
-            />
-            <span className="text-gray-400">（最大10文字）</span>
-
-            {showIconPicker && (
-              <div className="p-3 rounded-lg border border-gray-200 bg-white shadow-sm">
-                <div className="grid grid-cols-8 gap-2">
-                  {USER_ICONS.map((ic) => {
-                    const active = profile.icon === ic;
-                    return (
-                      <button
-                        key={ic}
-                        type="button"
-                        onClick={() => {
-                          setProfile((prev) => ({ ...prev, icon: ic }));
-                          setShowIconPicker(false);
-                        }}
-                        className={`w-10 h-10 rounded-lg border flex items-center justify-center text-xl transition active:scale-[0.99] ${active ? "border-indigo-400 bg-indigo-50" : "border-gray-200 bg-white hover:bg-gray-50"}`}
-                        title={ic}
-                      >
-                        {ic}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-        <textarea
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          placeholder="質問・相談・共有など（800文字まで）"
-          className={`mt-3 w-full p-3 border border-gray-300 rounded-lg min-h-[120px] ${focusCls}`}
-          maxLength={800}
-          aria-label="本文"
-        />
-
-        <div className="mt-2 flex items-center justify-between text-xs text-gray-500 font-bold">
-          <span>{body.length} / 800</span>
-          {!currentUser ? (
-            <button onClick={requireLogin} className="px-4 py-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold border border-indigo-200 transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-indigo-200">
-              ログインして投稿
-            </button>
-          ) : (
-            <button
-              onClick={() => {
-                if (!selectedThread) return;
-                setProfile((prev) => ({ ...prev, displayName: displayNameDraft.slice(0, 10) }));
-                addPost(selectedThread.id, body, "nickname");
-                setBody("");
-              }}
-              className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-indigo-200"
-            >
-              投稿
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  };
-
+  
+  
     return (
     <div className="space-y-6">
       {!currentUser && (
@@ -2146,7 +2285,20 @@ const scrollToCreateBox = () => {
           </div>
 
           <div className="mt-4" ref={createBoxRef}>
-  {isCreateOpen && <ThreadCreateBox />}
+  {isCreateOpen && (
+            <ThreadCreateBox
+              currentUser={currentUser}
+              profile={profile}
+              setProfile={setProfile}
+              focusCls={focusCls}
+              TAG_OPTIONS={TAG_OPTIONS}
+              tagToggleBtnClass={tagToggleBtnClass}
+              toggleTag={toggleTag}
+              onRequireLogin={onRequireLogin}
+              createThread={createThread}
+              setIsCreateOpen={setIsCreateOpen}
+            />
+          )}
 </div>
 
           <div className="mt-4 space-y-2" ref={threadListRef}>
@@ -2166,8 +2318,34 @@ const scrollToCreateBox = () => {
                 const isOwner = !!currentUser && t.createdByUserId === currentUser.id;
 return (
                   <button
+                    id={`dwthread-${t.id}`}
                     key={t.id}
-                    onClick={() => setSelectedThreadId(t.id)}
+                    onClick={() => {
+                      // 一覧のスクロール位置を保存してから詳細へ遷移
+                      try {
+                        const el = threadListRef.current;
+                        let scroller: HTMLElement | Window = window;
+                        if (el && typeof window !== "undefined") {
+                          let p: HTMLElement | null = el.parentElement;
+                          while (p) {
+                            const st = window.getComputedStyle(p);
+                            const oy = st.overflowY;
+                            if ((oy === "auto" || oy === "scroll") && p.scrollHeight > p.clientHeight) {
+                              scroller = p;
+                              break;
+                            }
+                            p = p.parentElement;
+                          }
+                        }
+                        if (scroller === window) {
+                          listScrollPosRef.current = { isWindow: true, top: window.scrollY };
+                        } else {
+                          listScrollPosRef.current = { isWindow: false, top: (scroller as HTMLElement).scrollTop };
+                        }
+                        lastViewedThreadIdRef.current = t.id;
+                      } catch { /* noop */ }
+                      setSelectedThreadId(t.id);
+                    }}
                     className={`w-full text-left p-4 rounded-xl border transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-indigo-200 ${isOwner ? "bg-white border-indigo-200 hover:bg-indigo-50" : "bg-white border-gray-200 hover:bg-indigo-50"}`}
                   >
                     <div className="flex items-start gap-3">
@@ -2176,18 +2354,21 @@ return (
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 min-w-0">
-                        <p className="font-extrabold text-gray-900 text-base md:text-lg leading-snug line-clamp-1 min-w-0">{t.title}</p>
+  <span className="shrink-0 text-xs text-gray-500 font-bold">[{no}]</span>
+<p className="font-extrabold text-gray-900 text-base md:text-lg leading-snug line-clamp-1 min-w-0">{t.title}{t.updatedAt && t.createdAt && t.updatedAt !== t.createdAt ? <span className="ml-1 text-xs text-gray-400">（編集済み）</span> : null}</p>
                         {isOwner ? (
                           <>
                             <span className="shrink-0 text-xs px-2 py-0.5 rounded bg-indigo-600 text-white font-extrabold">自分</span>
                             <span className="shrink-0 text-xs px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 font-extrabold border border-indigo-200">スレ主</span>
                           </>
                         ) : null}
+                        {isRecent(t.createdAt) ? <span className="shrink-0 px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200">🌱 新規</span> : null}
+                        {isRecent(t.updatedAt) ? <span className="shrink-0 px-3 py-1 rounded-full text-xs font-extrabold bg-rose-50 text-rose-800 border border-rose-200">🔥 更新</span> : null}
                       </div>
                         <div className="mt-1 text-xs md:text-sm text-gray-600 font-bold flex flex-wrap items-center gap-2">
-                      <span className="text-gray-500">[{no}]</span>
-                      {isRecent(t.createdAt) ? <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200 text-sm">🌱 新規</span> : null}
-                      {isRecent(t.updatedAt) ? <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-rose-50 text-rose-800 border border-rose-200 text-sm">🔥 更新</span> : null}
+                      
+                      
+                      
                       <span className="inline-flex items-center gap-1">🕒 {fmtJst(t.updatedAt)}</span>
                       <span className="text-gray-300">|</span>
                       <span className="inline-flex items-center gap-1">💬 {postCount}</span>
@@ -2260,18 +2441,7 @@ return (
                   自分の投稿のみ
                 </label>
               )}
-
-              {isThreadOwner && (
-                <button
-                  type="button"
-                  onClick={() => deleteThread(selectedThread.id)}
-                  className="text-xs px-3 py-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 font-bold border border-red-200 transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-red-200"
-                >
-                  スレッド削除
-                </button>
-              )}
-
-              <div className="text-right">
+<div className="text-right">
                 <p className="text-xs text-gray-500 font-bold">更新日: {fmtJst(selectedThread.updatedAt)}</p>
               </div>
             </div>
@@ -2280,22 +2450,29 @@ return (
           <div className="mt-4">
             {!isEditingThread ? (
               <div className="flex items-start justify-between gap-3">
-                <h3 className="text-xl font-extrabold text-gray-800">{selectedThread.title}</h3>
+                <h3 className="text-xl font-extrabold text-gray-800">{selectedThread.title}{selectedThread.updatedAt && selectedThread.createdAt && selectedThread.updatedAt !== selectedThread.createdAt ? <span className="ml-1 text-xs text-gray-400">（編集済み）</span> : null}</h3>
                 {isThreadOwner && (
+  <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => {
                       setIsEditingThread(true);
                       setThreadTitleDraft(selectedThread.title);
                       setThreadTagsDraft(selectedThread.tags ?? []);
-                      scrollToComposer();
                     }}
                     className="text-xs px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 font-bold hover:bg-amber-100 transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-amber-200"
                   >
                     スレッド編集
                   </button>
-                )}
-              </div>
+    <button
+      type="button"
+      onClick={() => deleteThread(selectedThread.id)}
+      className="text-xs px-3 py-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 font-bold border border-red-200 transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-red-200"
+    >
+      スレッド削除
+    </button>
+  </div>
+)}</div>
             ) : (
               <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
                 <p className="text-xs text-gray-600 font-bold mb-2">スレッド内容を編集（スレ主のみ）</p>
@@ -2340,7 +2517,7 @@ return (
                       setThreadTitleDraft(selectedThread.title);
                       setThreadTagsDraft(selectedThread.tags ?? []);
                     }}
-                    className="text-xs px-3 py-2 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-800 font-bold transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-teal-200"
+                    className="text-xs px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-indigo-200"
                   >
                     キャンセル
                   </button>
@@ -2391,7 +2568,18 @@ return (
             )}
           </div>
 
-          <PostComposer />
+          <PostComposer
+            currentUser={currentUser}
+            onRequireLogin={onRequireLogin}
+            profile={profile}
+            setProfile={setProfile}
+            selectedThread={selectedThread}
+            addPost={addPost}
+            showIconPicker={showIconPicker}
+            setShowIconPicker={setShowIconPicker}
+            composerRef={composerRef}
+            focusCls={focusCls}
+          />
         </div>
       )}
     </div>
@@ -2887,20 +3075,7 @@ const PersonalizeSection = ({
       <h3 className="mt-8 text-xl font-bold text-gray-700 mb-4 flex items-center"><span className="mr-2">🧶</span> あなたへのアナログ趣味の提案</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {resultType?.recommendedHobbies?.map((h) => (
-          <div key={h.id} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-            <p className="font-bold text-gray-800">{h.name}</p>
-            <p className="text-sm text-gray-600 mt-1">{h.description}</p>
-            <div className="mt-2 text-xs text-gray-500 flex gap-2 flex-wrap">
-              
-              <span className="px-2 py-1 bg-gray-100 rounded">{getPlaceMeta(h.place).icon} {getPlaceMeta(h.place).label}</span>
-              <span className={`px-2 py-1 rounded border ${HOBBY_COST_COLOR[h.cost]}`}>コスト：{HOBBY_COST_LABELS[h.cost]}</span>
-            </div>
-            <p className="mt-2 text-sm font-bold text-teal-700">最初の一歩：{h.firstStep}</p>
-            {h.supplies?.length ? <p className="mt-1 text-xs text-gray-500">準備物：{h.supplies.join("、")}</p> : null}
-            <button onClick={() => openDetail(h)} className="mt-3 text-xs bg-white border border-indigo-300 text-indigo-700 px-3 py-2 rounded font-bold transition hover:bg-indigo-50">
-              詳細を見る
-            </button>
-          </div>
+          <HobbyCard key={h.id} hobby={h} typeIcon={resultType!.icon} typeName={resultType!.name} onOpenDetail={openDetail} />
         ))}
       </div>
 
@@ -4471,7 +4646,7 @@ const AdminPanel = ({
         <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
           <h2 className="text-lg font-bold text-gray-800 mb-3">グローバル操作</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <button onClick={openRatingsDemo} className="px-3 py-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-800 border border-yellow-200 rounded-lg font-bold">評価データ初期化（全体）</button>
+            <button onClick={openRatingsDemo} className="px-3 py-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-800 border border-yellow-200 rounded-lg font-bold">評価データのデモ・初期化</button>
             <button onClick={openUserDataDemo} className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg font-bold">全ユーザーの診断履歴・結果・タイプ削除</button>
             <button
               onClick={() => {
@@ -4523,7 +4698,7 @@ const AdminPanel = ({
         currentAppStats={appStats}
         onExecute={() => { if (demoMode === "ratings") { onResetAllRatings(); } else { onClearAllUserData(); } setIsDemoOpen(false); }}
         onApplyDemo={() => { onApplyDemoStats(); alert("デモデータを適用しました。画面上のグラフやカードで見え方を確認できます。"); }}
-        onRestore={() => { onResetAllRatings(); alert("評価データを完全に0件に初期化しました。"); }}
+        onRestore={() => { onResetAllRatings(); }}
       />
     </div>
   );
@@ -4729,7 +4904,7 @@ const DigitalWellbeingApp: React.FC = () => {
     setAppStats(emptyStats);
     users.forEach((u: User) => { removeFromLocalStorage(KEY_USER_RATINGS, u.id); });
     saveToLocalStorage(KEY_APP_STATS, emptyStats);
-    alert("評価データを空の状態（0件）に初期化しました。");
+    alert("評価データを0件に初期化しました。");
   };
 
   const onClearAllUserData = () => {
