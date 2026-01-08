@@ -93,6 +93,7 @@ interface UserAppRating {
     design: number;
   };
   updatedAt: string;
+  editedAt?: string;
 }
 type UserRatingsMap = { [appId: string]: UserAppRating };
 
@@ -106,7 +107,8 @@ interface BoardThread {
   tags: string[];
   createdAt: string;
   updatedAt: string;
-  createdByUserId: string;
+  
+  editedAt?: string; createdByUserId: string;
 }
 interface BoardPost {
   id: string;
@@ -1948,7 +1950,7 @@ const scrollToCreateBox = () => {
     const tags = normalizeTags(nextTags);
 
     const now = new Date().toISOString();
-    setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, title: title.slice(0, 20), tags, updatedAt: now } : t)));
+    setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, title: title.slice(0, 20), tags, editedAt: now, updatedAt: now } : t)));
     setIsEditingThread(false);
   };
 
@@ -2355,7 +2357,7 @@ return (
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 min-w-0">
   <span className="shrink-0 text-xs text-gray-500 font-bold">[{no}]</span>
-<p className="font-extrabold text-gray-900 text-base md:text-lg leading-snug line-clamp-1 min-w-0">{t.title}{t.updatedAt && t.createdAt && t.updatedAt !== t.createdAt ? <span className="ml-1 text-xs text-gray-400">（編集済み）</span> : null}</p>
+<p className="font-extrabold text-gray-900 text-base md:text-lg leading-snug line-clamp-1 min-w-0">{t.title}{t.editedAt && t.createdAt && t.editedAt !== t.createdAt ? <span className="ml-1 text-xs text-gray-400">（編集済み）</span> : null}</p>
                         {isOwner ? (
                           <>
                             <span className="shrink-0 text-xs px-2 py-0.5 rounded bg-indigo-600 text-white font-extrabold">自分</span>
@@ -2450,7 +2452,7 @@ return (
           <div className="mt-4">
             {!isEditingThread ? (
               <div className="flex items-start justify-between gap-3">
-                <h3 className="text-xl font-extrabold text-gray-800">{selectedThread.title}{selectedThread.updatedAt && selectedThread.createdAt && selectedThread.updatedAt !== selectedThread.createdAt ? <span className="ml-1 text-xs text-gray-400">（編集済み）</span> : null}</h3>
+                <h3 className="text-xl font-extrabold text-gray-800">{selectedThread.title}{selectedThread.editedAt && selectedThread.createdAt && selectedThread.editedAt !== selectedThread.createdAt ? <span className="ml-1 text-xs text-gray-400">（編集済み）</span> : null}</h3>
                 {isThreadOwner && (
   <div className="flex items-center gap-2">
                   <button
