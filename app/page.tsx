@@ -43,6 +43,7 @@ interface Hobby {
  difficulty?: "初級" | "中級" | "上級";
 }
 
+type AppPlatforms = { ios: boolean; android: boolean };
 interface AppStat {
   id: string;
   name: string;
@@ -50,6 +51,7 @@ interface AppStat {
   icon: string;
   desc: string;
   url: string;
+  platforms: AppPlatforms;
   successRate: number;
   totalVotes: number;
   ratings: {
@@ -269,16 +271,16 @@ const PERSONALIZE_QUESTIONS = [
 ];
 
 const initialAppStats: AppStat[] = [
-  { id: "forest", name: "Forest", category: "gamification", icon: "🌲", desc: "集中時間に応じて「木」を育て、失敗すると枯れる。", url: "https://www.google.com/search?q=スマホアプリ+Forest", successRate: 85, totalVotes: 1240, ratings: { effectiveness: 4.5, fun: 4.8, ease: 4.0, continuity: 4.2, design: 5.0 } },
-  { id: "focus_quest", name: "Focus Quest", category: "gamification", icon: "🗺️", desc: "集中時間を「冒険」に見立て、目標達成でヒーローを育成.", url: "https://www.google.com/search?q=スマホアプリ+Focus+Quest", successRate: 78, totalVotes: 530, ratings: { effectiveness: 4.0, fun: 5.0, ease: 3.5, continuity: 4.5, design: 4.2 } },
-  { id: "fish", name: "スマホをやめれば魚が育つ", category: "gamification", icon: "🐟", desc: "スマホを置くことで、かわいい「魚」が水槽で成長。", url: "https://www.google.com/search?q=スマホアプリ+スマホをやめれば魚が育つ", successRate: 82, totalVotes: 320, ratings: { effectiveness: 3.8, fun: 4.2, ease: 5.0, continuity: 3.9, design: 4.0 } },
-  { id: "focus_dog", name: "Focus Dog", category: "gamification", icon: "🐶", desc: "集中してドーナツを作り、相棒の犬を喜ばせる。", url: "https://www.google.com/search?q=スマホアプリ+Focus+Dog", successRate: 75, totalVotes: 210, ratings: { effectiveness: 3.5, fun: 4.5, ease: 4.5, continuity: 3.8, design: 4.8 } },
-  { id: "detox", name: "Detox", category: "lock", icon: "🔒", desc: "シンプルなタイマー機能で、設定時間、スマホを強制ロック。", url: "https://www.google.com/search?q=スマホアプリ+Detox", successRate: 92, totalVotes: 890, ratings: { effectiveness: 5.0, fun: 2.0, ease: 4.8, continuity: 3.5, design: 3.0 } },
-  { id: "ubhind", name: "UBhind", category: "lock", icon: "📊", desc: "利用時間を可視化し、制限時間10分前にアラーム通知。", url: "https://www.google.com/search?q=スマホアプリ+UBhind", successRate: 68, totalVotes: 450, ratings: { effectiveness: 4.2, fun: 3.0, ease: 3.5, continuity: 4.0, design: 3.8 } },
-  { id: "stayfree", name: "StayFree", category: "lock", icon: "⏳", desc: "アプリごとの使用時間をトラッキングし、アプリの使用を制限。", url: "https://www.google.com/search?q=スマホアプリ+StayFree", successRate: 74, totalVotes: 600, ratings: { effectiveness: 4.5, fun: 3.5, ease: 4.0, continuity: 4.2, design: 4.5 } },
-  { id: "stop", name: "使いすぎストップ", category: "lock", icon: "⛔", desc: "スマホの使用時間管理や制限を簡単に行える。", url: "https://www.google.com/search?q=スマホアプリ+使いすぎストップ", successRate: 70, totalVotes: 300, ratings: { effectiveness: 4.0, fun: 2.5, ease: 4.5, continuity: 3.8, design: 3.5 } },
-  { id: "family_link", name: "Google Family Link", category: "family", icon: "🌐", desc: "Google公式。子どもの利用時間をリモート管理。", url: "https://www.google.com/search?q=スマホアプリ+Google+Family+Link", successRate: 88, totalVotes: 1500, ratings: { effectiveness: 4.8, fun: 2.5, ease: 3.5, continuity: 4.8, design: 4.0 } },
-  { id: "screentime", name: "スクリーンタイム (iOS)", category: "family", icon: "🍏", desc: "Apple公式。アプリごとの時間制限、休止時間設定。", url: "https://www.google.com/search?q=スマホアプリ+スクリーンタイム+iOS", successRate: 80, totalVotes: 2000, ratings: { effectiveness: 4.5, fun: 3.0, ease: 5.0, continuity: 4.5, design: 4.5 } },
+  { id: "forest", name: "Forest", category: "gamification", icon: "🌲", desc: "集中時間に応じて「木」を育て、失敗すると枯れる。", url: "https://www.google.com/search?q=スマホアプリ+Forest", platforms: { ios: true, android: true }, successRate: 85, totalVotes: 1240, ratings: { effectiveness: 4.5, fun: 4.8, ease: 4.0, continuity: 4.2, design: 5.0 } },
+  { id: "focus_quest", name: "Focus Quest", category: "gamification", icon: "🗺️", desc: "集中時間を「冒険」に見立て、目標達成でヒーローを育成.", url: "https://www.google.com/search?q=スマホアプリ+Focus+Quest", platforms: { ios: true, android: true }, successRate: 78, totalVotes: 530, ratings: { effectiveness: 4.0, fun: 5.0, ease: 3.5, continuity: 4.5, design: 4.2 } },
+  { id: "fish", name: "スマホをやめれば魚が育つ", category: "gamification", icon: "🐟", desc: "スマホを置くことで、かわいい「魚」が水槽で成長。", url: "https://www.google.com/search?q=スマホアプリ+スマホをやめれば魚が育つ", platforms: { ios: true, android: true }, successRate: 82, totalVotes: 320, ratings: { effectiveness: 3.8, fun: 4.2, ease: 5.0, continuity: 3.9, design: 4.0 } },
+  { id: "focus_dog", name: "Focus Dog", category: "gamification", icon: "🐶", desc: "集中してドーナツを作り、相棒の犬を喜ばせる。", url: "https://www.google.com/search?q=スマホアプリ+Focus+Dog", platforms: { ios: true, android: true }, successRate: 75, totalVotes: 210, ratings: { effectiveness: 3.5, fun: 4.5, ease: 4.5, continuity: 3.8, design: 4.8 } },
+  { id: "detox", name: "Detox", category: "lock", icon: "🔒", desc: "シンプルなタイマー機能で、設定時間、スマホを強制ロック。", url: "https://www.google.com/search?q=スマホアプリ+Detox", platforms: { ios: true, android: true }, successRate: 92, totalVotes: 890, ratings: { effectiveness: 5.0, fun: 2.0, ease: 4.8, continuity: 3.5, design: 3.0 } },
+  { id: "ubhind", name: "UBhind", category: "lock", icon: "📊", desc: "利用時間を可視化し、制限時間10分前にアラーム通知。", url: "https://www.google.com/search?q=スマホアプリ+UBhind", platforms: { ios: false, android: true }, successRate: 68, totalVotes: 450, ratings: { effectiveness: 4.2, fun: 3.0, ease: 3.5, continuity: 4.0, design: 3.8 } },
+  { id: "stayfree", name: "StayFree", category: "lock", icon: "⏳", desc: "アプリごとの使用時間をトラッキングし、アプリの使用を制限。", url: "https://www.google.com/search?q=スマホアプリ+StayFree", platforms: { ios: true, android: true }, successRate: 74, totalVotes: 600, ratings: { effectiveness: 4.5, fun: 3.5, ease: 4.0, continuity: 4.2, design: 4.5 } },
+  { id: "stop", name: "使いすぎストップ", category: "lock", icon: "⛔", desc: "スマホの使用時間管理や制限を簡単に行える。", url: "https://www.google.com/search?q=スマホアプリ+使いすぎストップ", platforms: { ios: false, android: true }, successRate: 70, totalVotes: 300, ratings: { effectiveness: 4.0, fun: 2.5, ease: 4.5, continuity: 3.8, design: 3.5 } },
+  { id: "family_link", name: "Google Family Link", category: "family", icon: "🌐", desc: "Google公式。子どもの利用時間をリモート管理。", url: "https://www.google.com/search?q=スマホアプリ+Google+Family+Link", platforms: { ios: true, android: true }, successRate: 88, totalVotes: 1500, ratings: { effectiveness: 4.8, fun: 2.5, ease: 3.5, continuity: 4.8, design: 4.0 } },
+  { id: "screentime", name: "スクリーンタイム (iOS)", category: "family", icon: "🍏", desc: "Apple公式。アプリごとの時間制限、休止時間設定。", url: "https://www.google.com/search?q=スマホアプリ+スクリーンタイム+iOS", platforms: { ios: true, android: false }, successRate: 80, totalVotes: 2000, ratings: { effectiveness: 4.5, fun: 3.0, ease: 5.0, continuity: 4.5, design: 4.5 } },
 ];
 
 /* ===============================================
@@ -428,14 +430,47 @@ const useBodyScrollLock = (isOpen: boolean) => {
 const ResourceChart = ({ type, data, options, plugins, chartjsConstructor, isChartJsLoaded }: any) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chartInstance = useRef<ChartInstance | null>(null);
+
+  // ✅ 参照用：plugins が未指定でも常に配列として扱う
+  const safePlugins = Array.isArray(plugins) ? plugins : (plugins ? [plugins] : []);
+
+  // ✅ データ更新時は destroy せず update（例外時も既存チャートを残して「真っ白化」を防ぐ）
   useEffect(() => {
-    if (isChartJsLoaded && chartjsConstructor && canvasRef.current) {
-      if (chartInstance.current) chartInstance.current.destroy();
-      const ctx = canvasRef.current.getContext("2d");
-      if (ctx) chartInstance.current = new chartjsConstructor(ctx, { type, data, options, plugins });
+    if (!isChartJsLoaded || !chartjsConstructor || !canvasRef.current) return;
+    const ctx = canvasRef.current.getContext("2d");
+    if (!ctx) return;
+
+    // 既存があれば update
+    if (chartInstance.current) {
+      try {
+        chartInstance.current.data = data;
+        chartInstance.current.options = options;
+        (chartInstance.current as any).config.plugins = safePlugins;
+        chartInstance.current.update();
+        return;
+      } catch {
+        // update が失敗しても destroy しない（表示が消えるのを防ぐ）
+      }
     }
-    return () => { if (chartInstance.current) chartInstance.current.destroy(); };
-  }, [data, options, type, chartjsConstructor, isChartJsLoaded]);
+
+    // まだ無ければ作成（作成に失敗しても destroy しない）
+    try {
+      chartInstance.current = new chartjsConstructor(ctx, { type, data, options, plugins: safePlugins });
+    } catch {
+      // noop
+    }
+  }, [data, options, type, safePlugins, chartjsConstructor, isChartJsLoaded]);
+
+  // ✅ アンマウント時だけ破棄
+  useEffect(() => {
+    return () => {
+      if (chartInstance.current) {
+        try { chartInstance.current.destroy(); } catch { /* noop */ }
+        chartInstance.current = null;
+      }
+    };
+  }, []);
+
   if (!isChartJsLoaded) {
     return (
       <div className="h-32 bg-gray-100 rounded animate-pulse flex items-center justify-center text-xs text-gray-400">
@@ -449,9 +484,6 @@ const ResourceChart = ({ type, data, options, plugins, chartjsConstructor, isCha
     </div>
   );
 };
-
-
-
 // ===== Chart.js: ドーナツ中央テキスト（円の中心に直接描画してズレを防止） =====
 const DoughnutCenterTextPlugin = {
   id: "centerText",
@@ -459,7 +491,11 @@ const DoughnutCenterTextPlugin = {
     try {
       const meta = chart.getDatasetMeta?.(0);
       const arc = meta?.data?.[0];
-      if (!arc) return;
+      // ✅ 0% などで最初のarcが生成されない場合があるため、中心座標のフォールバックを用意
+      const area = chart.chartArea;
+      const cx = (arc?.x ?? (area ? (area.left + area.right) / 2 : null));
+      const cy = (arc?.y ?? (area ? (area.top + area.bottom) / 2 : null));
+      if (cx === null || cy === null) return;
       const ctx = chart.ctx;
       const pluginOpts = chart?.options?.plugins?.centerText ?? {};
       const text = pluginOpts.text ?? "";
@@ -471,7 +507,7 @@ const DoughnutCenterTextPlugin = {
       ctx.font = font;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(String(text), arc.x, arc.y);
+      ctx.fillText(String(text), cx, cy);
       ctx.restore();
     } catch {
       // noop
@@ -980,19 +1016,32 @@ const AdminActionDemoModal = ({
 
 /* --- アプリカード／リソースセクション --- */
 const AppCard = ({ app, chartjsConstructor, isChartJsLoaded, onOpenSurvey }: any) => {
-  const pieData = { labels: ["成功", "失敗"], datasets: [{ data: [app.successRate, 100 - app.successRate], backgroundColor: ["#4ade80", "#e5e7eb"], borderWidth: 0 }] };
+    const toNum = (v: any, fallback = 0) => {
+    const n = typeof v === "number" ? v : Number(v);
+    return Number.isFinite(n) ? n : fallback;
+  };
+  const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
+  const safeRate = clamp(toNum(app.successRate, 0), 0, 100);
+  const safeRatings = {
+    effectiveness: clamp(toNum(app.ratings?.effectiveness, 0), 0, 5),
+    fun: clamp(toNum(app.ratings?.fun, 0), 0, 5),
+    ease: clamp(toNum(app.ratings?.ease, 0), 0, 5),
+    continuity: clamp(toNum(app.ratings?.continuity, 0), 0, 5),
+    design: clamp(toNum(app.ratings?.design, 0), 0, 5),
+  };
+const pieData = { labels: ["成功", "失敗"], datasets: [{ data: [safeRate, 100 - safeRate], backgroundColor: ["#4ade80", "#e5e7eb"], borderWidth: 0 }] };
   const pieOptions = {
     plugins: {
       legend: { display: false },
       tooltip: { enabled: false },
       // ✅ 中央表示（Chart.jsの中心に描画）
-      centerText: { text: `${app.successRate}%`, color: "#16a34a", font: "800 12px system-ui, -apple-system, Segoe UI, sans-serif" },
+      centerText: { text: `${safeRate}%`, color: "#16a34a", font: "800 12px system-ui, -apple-system, Segoe UI, sans-serif" },
     },
     maintainAspectRatio: false,
   };
   const radarData = {
     labels: ["効果", "楽しさ", "手軽さ", "継続性", "デザイン"],
-    datasets: [{ label: "評価", data: [app.ratings.effectiveness, app.ratings.fun, app.ratings.ease, app.ratings.continuity, app.ratings.design], backgroundColor: "rgba(99, 102, 241, 0.2)", borderColor: "rgba(99, 102, 241, 1)", borderWidth: 1, pointBackgroundColor: "rgba(99, 102, 241, 1)", pointRadius: 1 }]
+    datasets: [{ label: "評価", data: [safeRatings.effectiveness, safeRatings.fun, safeRatings.ease, safeRatings.continuity, safeRatings.design], backgroundColor: "rgba(99, 102, 241, 0.2)", borderColor: "rgba(99, 102, 241, 1)", borderWidth: 1, pointBackgroundColor: "rgba(99, 102, 241, 1)", pointRadius: 1 }]
   };
   const radarOptions= { plugins: { legend: { display: false } }, scales: { r: { min: 0, max: 5, ticks: { display: false, stepSize: 1 }, pointLabels: { display: true, font: { size: 9 }, color: "#4b5563" } } }, maintainAspectRatio: false };
 
@@ -1004,6 +1053,14 @@ const AppCard = ({ app, chartjsConstructor, isChartJsLoaded, onOpenSurvey }: any
           <div>
             <h4 className="font-bold text-lg text-gray-800 leading-tight">{app.name}</h4>
             <p className="text-xs text-gray-500">{app.totalVotes}件の評価</p>
+            <div className="mt-2 flex flex-wrap gap-3 text-xs md:text-sm font-extrabold">
+              <span className={`px-3 py-1 rounded-full border-2 ${app.platforms?.ios ? "bg-emerald-50 text-emerald-900 border-emerald-300" : "bg-gray-100 text-gray-500 border-gray-200"}`}>
+                🍎 iOS (iPhone) <span className="ml-1">{app.platforms?.ios ? "○" : "×"}</span>
+              </span>
+              <span className={`px-3 py-1 rounded-full border-2 ${app.platforms?.android ? "bg-emerald-50 text-emerald-900 border-emerald-300" : "bg-gray-100 text-gray-500 border-gray-200"}`}>
+                🤖 Android <span className="ml-1">{app.platforms?.android ? "○" : "×"}</span>
+              </span>
+            </div>
           </div>
         </div>
 
@@ -1088,7 +1145,7 @@ const KnowledgeSection = () => {
         <div className="grid grid-cols-1 gap-3 mb-6">
           <KnowledgeLink icon="📖" title="【脳科学】スマホがもたらすドーパミンの罠と対処法" url="https://www.google.com/search?q=【脳科学】スマホがもたらすドーパミンの罠と対処法" />
           <KnowledgeLink icon="🧘" title="今日からできる！デジタルデトックス入門ガイド" url="https://www.google.com/search?q=今日からできる！デジタルデトックス入門ガイド" />
-          <KnowledgeLink icon="🔔" title="集中力を高めるための通知設定の極意" url="https://www.google.com/search?q=集中力を高めるための通知設定の極意" />
+          <KnowledgeLink icon="🔔" title="集中力を高めるための通知設定の極意" url="https://www.google.com/search?q=集中力を高めるためのスマホ通知設定の極意" />
         </div>
 
         <h4 className="font-bold text-gray-700 mb-3 border-l-4 border-purple-400 pl-3">専門機関・相談窓口</h4>
@@ -2829,7 +2886,7 @@ const HobbySection: React.FC<{ currentUser: User | null; onGoPersonalize: () => 
     <div className="max-w-4xl mx-auto space-y-6">
       {/* ヘッダー */}
       <div className="bg-white border border-purple-100 rounded-xl p-6 shadow-sm">
-        <h2 className="text-xl md:text-2xl font-bold text-purple-800 flex items-center gap-2"><span>📗</span> 趣味（アナログ置き換え）おすすめカタログ</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-purple-800 flex items-center gap-2"><span>📗</span> スマホから離れるための趣味一覧</h2>
         <p className="mt-2 text-sm text-gray-600">デジタルデトックスやリラックスに向いた趣味をタイプ別に紹介します。難易度・コストで絞り込みもできます。</p>
       </div>
 
@@ -3067,14 +3124,14 @@ const PersonalizeSection = ({
         </div>
       </div>
 
-      <h3 className="text-xl font-bold text-gray-700 mb-4 flex items-center"><span className="mr-2">🎁</span> あなたへの提案アプリ</h3>
+      <h3 className="text-xl font-bold text-gray-700 mb-4 flex items-center"><span className="mr-2">🎁</span> おすすめの依存対策アプリ</h3>
       <div className="space-y-4">
         {recommendedApps.map((app) => (
           <AppCard key={app.id} app={app} chartjsConstructor={chartjsConstructor} isChartJsLoaded={isChartJsLoaded} onOpenSurvey={onOpenSurvey} />
         ))}
       </div>
 
-      <h3 className="mt-8 text-xl font-bold text-gray-700 mb-4 flex items-center"><span className="mr-2">🧶</span> あなたへのアナログ趣味の提案</h3>
+      <h3 className="mt-8 text-xl font-bold text-gray-700 mb-4 flex items-center"><span className="mr-2">🧶</span> おすすめのスマホから離れるための趣味</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {resultType?.recommendedHobbies?.map((h) => (
           <HobbyCard key={h.id} hobby={h} typeIcon={resultType!.icon} typeName={resultType!.name} onOpenDetail={openDetail} />
@@ -4225,7 +4282,11 @@ setHasLoadedUserData(false);
     const loaded = loadFromLocalStorage<AppStat[]>(KEY_APP_STATS, initialAppStats);
     const migrated = loaded.map((app) => {
       const anyApp = app as any;
-      if (!anyApp._agg) {
+            if (!anyApp.platforms) {
+        const base = initialAppStats.find((x) => x.id === app.id) as any;
+        anyApp.platforms = base?.platforms ?? { ios: true, android: true };
+      }
+if (!anyApp._agg) {
         anyApp._agg = {
           successCount: Math.round(app.successRate * app.totalVotes / 100),
           ratingSums: {
@@ -4765,6 +4826,16 @@ const DigitalWellbeingApp: React.FC = () => {
     setIsAppLoading(false);
   }, []);
 
+  // ✅ デモモード: 常にデモデータで起動（起動時ロード完了後に毎回デモ値で上書き）
+  useEffect(() => {
+    if (isAppLoading) return;
+    try {
+      applyDemoStats();
+    } catch {
+      // noop
+    }
+  }, [isAppLoading]);
+
   useEffect(() => {
     if (isAppLoading) return;
     if (currentUser) return;
@@ -4939,6 +5010,10 @@ const DigitalWellbeingApp: React.FC = () => {
     const avg = () => parseFloat((3 + Math.random() * 2).toFixed(1));
 
     const demo = appStats.map(app => {
+      // NOTE: デモ適用時は集計(_agg)を引き継がず、表示用の数値から都度再計算できるようにします
+      // （_agg が古い/不整合だと投票後の計算で NaN が出てチャートが消える原因になります）
+      const { _agg: _ignoredAgg, ...base } = app as any;
+
       const cfg = app.category === "gamification"
         ? { rate: [65, 90], votes: [500, 2000] }
         : app.category === "lock"
@@ -4946,7 +5021,7 @@ const DigitalWellbeingApp: React.FC = () => {
         : { rate: [75, 90], votes: [800, 3000] };
 
       return {
-        ...app,
+        ...base,
         successRate: rand(cfg.rate[0], cfg.rate[1]),
         totalVotes: rand(cfg.votes[0], cfg.votes[1]),
         ratings: { effectiveness: avg(), fun: avg(), ease: avg(), continuity: avg(), design: avg() },
@@ -4954,7 +5029,6 @@ const DigitalWellbeingApp: React.FC = () => {
     });
 
     setAppStats(demo);
-    saveToLocalStorage(KEY_APP_STATS, demo);
   };
 
   const restoreFromBackup = () => {
