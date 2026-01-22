@@ -2322,7 +2322,7 @@ const scrollToCreateBox = () => {
                   )}
                 </div>
 
-                <p className="mt-2 text-xs text-gray-400 font-bold">
+                <p className="mt-2 text-sm text-gray-400 font-bold">
                   ※「参加スレッドのみ」は、自分が作成または投稿したスレッドだけ表示します。
                 </p>
               </div>
@@ -2501,7 +2501,7 @@ return (
                 </label>
               )}
 <div className="text-right">
-                <p className="text-xs text-gray-500 font-bold">更新日: {fmtJst(selectedThread.updatedAt)}</p>
+                <p className="text-sm text-gray-500 font-bold">更新日: {fmtJst(selectedThread.updatedAt)}</p>
               </div>
             </div>
           </div>
@@ -2596,7 +2596,7 @@ return (
                 {(selectedThread.tags ?? []).map((x) => (
                   <span key={x} className={`text-xs px-2 py-1 rounded border font-bold ${tagChipClass(x)}`}>{tagLabel(x)}</span>
                 ))}
-                <span className="text-xs text-gray-400 ml-auto">投稿: {threadAllPosts.length}</span>
+                <span className="text-sm text-gray-400 ml-auto">投稿: {threadAllPosts.length}</span>
               </div>
             )}
             <hr className="my-4 border-gray-200" />
