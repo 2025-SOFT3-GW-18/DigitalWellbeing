@@ -2898,7 +2898,7 @@ const HobbySection: React.FC<{ currentUser: User | null; onGoPersonalize: () => 
       {!savedTypeResult && (
         <div className="mt-4 p-4 rounded-lg bg-white border border-purple-200 text-sm text-gray-700">
           <p className="font-extrabold text-purple-700 mb-1">まだタイプ診断が完了していません</p>
-          <p className="text-xs text-gray-600 mb-3">3問であなたの傾向を判定し、あなたへのおすすめを自動表示します。</p>
+          <p className="text-sm text-gray-600 mb-3">3問であなたの傾向を判定し、あなたへのおすすめを自動表示します。</p>
           <button onClick={onGoPersonalize} className="text-xs bg-teal-600 hover:bg-teal-700 text-white font-bold px-4 py-2 rounded-lg transition">タイプ診断へ移動する</button>
         </div>
       )}
