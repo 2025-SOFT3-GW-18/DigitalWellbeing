@@ -2289,7 +2289,7 @@ const scrollToCreateBox = () => {
           <div className="flex flex-col gap-3">
             <div className="text-center">
               <h3 className="font-extrabold text-gray-800 text-lg">スレッド一覧</h3>
-              <p className="mt-1 text-xs text-gray-500">タイトルで絞り込みできます。スレッドを選ぶと詳細が開きます。</p>
+              <p className="mt-1 text-sm text-gray-500">タイトルで絞り込みできます。スレッドを選ぶと詳細が開きます。</p>
             </div>
             <div className="w-full space-y-4">
               {/* A) 検索＋表示件数＋参加スレッドのみ＋注釈（1つの枠） */}
@@ -2893,7 +2893,7 @@ const HobbySection: React.FC<{ currentUser: User | null; onGoPersonalize: () => 
       {/* あなたへのおすすめ（タイプ別） */}
       <div className="bg-purple-50 border border-purple-200 rounded-xl p-6 shadow-sm">
         <p className="text-sm font-bold text-purple-700 flex items-center gap-2"><span>🍃</span> あなたへのおすすめ</p>
-        <p className="mt-1 text-xs text-gray-600">タイプを選択すると、あなた向けのおすすめが表示されます。</p>
+        <p className="mt-1 text-sm text-gray-600">タイプを選択すると、あなた向けのおすすめが表示されます。</p>
 
       {!savedTypeResult && (
         <div className="mt-4 p-4 rounded-lg bg-white border border-purple-200 text-sm text-gray-700">
@@ -2905,9 +2905,9 @@ const HobbySection: React.FC<{ currentUser: User | null; onGoPersonalize: () => 
 
         {/* タイプ選択（セレクトは削除／カードのみ常時表示） */}
         <div className="mt-6 space-y-3">
-          <p className="text-xs font-bold text-gray-700">タイプを選択</p>
+          <p className="text-sm font-bold text-gray-700">タイプを選択</p>
       {savedTypeResult && (
-        <div className="mt-2 p-3 rounded-lg bg-white/70 border border-purple-200 text-xs text-gray-700">
+        <div className="mt-2 p-3 rounded-lg bg-white/70 border border-purple-200 text-sm text-gray-700">
           <span className="font-extrabold text-purple-700">あなたの診断結果：</span>
           <span className="ml-1">{savedTypeResult.icon} {savedTypeResult.name}</span>
           <span className="ml-2 text-gray-500">（おすすめバッジのカードが該当）</span>
